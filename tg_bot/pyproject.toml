@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "misis-tg"
+version = "0.1.0"
+description = "tg bot for admission campaign in NUST MISIS"
+authors = ["algakz06, 0xb1b1"]
+readme = "README.md"
+packages = [{include = "misis_tg"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiogram = "^2.25.1"
+requests = "^2.28.2"
+python-dotenv = "^1.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
