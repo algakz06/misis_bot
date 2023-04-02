@@ -81,8 +81,8 @@ async def start(message: types.Message, state: FSMContext):
 async def get_back(message: types.Message, state: FSMContext):
     data = await state.get_data()
     queue: List[str] = data.get('queue')
-    btn_id = queue.pop()
-    btn_id = queue.pop()    #get last btn_id
+    queue.pop()
+    btn_id = queue[-1]    #get last btn_id
     await state.update_data(queue=queue)
     try:
         reply_msg: str = shit.get_reply(btn_id)
