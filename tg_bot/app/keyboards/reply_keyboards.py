@@ -1,15 +1,22 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from app.keyboards import buttons
-from typing import Optional, List
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
+from typing import Optional, List, Union, Dict
 
-def build_markup(buttons: Optional[List[str]] = None, main_keyboard: bool = False) -> list:
+def build_markup(buttons: Optional[Dict[str, str]] = None, btn_id: Optional[str] = None) -> Union[ReplyKeyboardMarkup,
+                                                                                             InlineKeyboardMarkup]:
+    if btn_id == '1':
+        return reply_markup(buttons=buttons)
+    else:
+        return inline_markup(buttons=buttons, btn_id=btn_id)
+
+def reply_markup(buttons: Optional[Dict[str, str]] = None) -> ReplyKeyboardMarkup:
     if buttons is None:
         return None
 
+    buttons = list(buttons.keys())
     keyboard = []
     temp = []
-    print(buttons)
+
     for button in buttons:
         if len(temp) < 2:
             temp.append(KeyboardButton(button))
@@ -21,21 +28,19 @@ def build_markup(buttons: Optional[List[str]] = None, main_keyboard: bool = Fals
     else:
         if len(temp) > 0:
             keyboard.append(temp)
-    if main_keyboard:
-        return ReplyKeyboardMarkup(keyboard=keyboard)
-    keyboard.append([KeyboardButton('Назад')])
     return ReplyKeyboardMarkup(keyboard=keyboard)
 
-def get_startKb() -> ReplyKeyboardMarkup:
-    keyboard = [
-        [
-            KeyboardButton(buttons.admission),
-            KeyboardButton(buttons.dormitory)
-        ],
-        [
-            KeyboardButton(buttons.extra_life),
-            KeyboardButton(buttons.scholarships)
-        ]
-    ]
+def inline_markup(buttons: Optional[Dict[str, str]] = None, btn_id: str = '') -> InlineKeyboardMarkup:
+    if buttons is None:
+        return None
 
-    return ReplyKeyboardMarkup(keyboard=keyboard)
+    keyboard = []
+
+    for button, button_id in buttons.items():
+        keyboard.append([InlineKeyboardButton(button, callback_data=button_id)])
+
+    if len(btn_id.split('.')) != 2:
+        keyboard.append([InlineKeyboardButton('Назад', callback_data='Назад')])
+
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
