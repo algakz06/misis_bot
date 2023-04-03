@@ -5,12 +5,14 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /misis
+WORKDIR /app
+
+RUN mkdir -p ./logs
 
 COPY ./requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY . /misis/
+COPY . .
 
 CMD ["python3", "-m", "app"]
