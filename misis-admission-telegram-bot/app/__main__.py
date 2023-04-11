@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 
 #region local imports
 from app import config
+from app.config import log
 from app.keyboards import reply_keyboards
 from app.keyboards.reply_keyboards import build_markup
 from app.utils.shit import Shit
@@ -19,12 +20,10 @@ from app.utils.shit import Shit
 
 #region app initialization
 bot = Bot(config.tg_token)
-dp = Dispatcher(bot, storage=MemoryStorage())
+dp = Dispatcher(bot)
 shit = Shit()
 #endregion
 
-class Storage(StatesGroup):
-    user = State()
 
 buttons: Dict[str, str] = shit.get_all_buttons()
 
@@ -32,65 +31,42 @@ buttons: Dict[str, str] = shit.get_all_buttons()
 async def start(message: types.Message, state: FSMContext):
     buttons = shit.get_btns('1')
     reply_msg = shit.get_reply('0')
-    await state.set_state(Storage.user)
-    await state.update_data(queue=dict())
-    await message.answer(reply_msg, reply_markup=reply_keyboards.build_markup(buttons, '1'))
+    await message.answer(reply_msg, reply_markup=reply_keyboards.build_markup('', buttons, True))
 
-# @dp.message_handler(Text('Назад'), state='*')
-# async def get_back(message: types.Message, state: FSMContext):
-#     data = await state.get_data()
-#     queue: List[str] = data.get('queue')
-#     queue.pop()
-#     btn_id = queue[-1]    #get last btn_id
-#     await state.update_data(queue=queue)
-#     try:
-#         reply_msg: str = shit.get_reply(btn_id)
-#     except IndexError:
-#         reply_msg: str = 'Главное меню'
-#     keyboard_btn: Dict[str, str] = shit.get_btns(btn_id)
-#     keyboard = build_markup(keyboard_btn, btn_id)
-#     await message.answer(reply_msg, reply_markup=keyboard)
+@dp.message_handler(Text(equals='Помогите!', ignore_case=True))
+async def locations(message: types.Message) -> None:
+    await message.answer('Пока ничего не делает')
 
-@dp.message_handler(state='*')
-async def handler(message: types.Message, state: FSMContext) -> None:
-    if message.text not in buttons.keys():
+@dp.message_handler()
+async def handler(message: types.Message) -> None:
+    if message.text not in buttons.values():
         print('ERROR: no message')
         return
 
-    btn_id = buttons.get(message.text, None)
+    btn_id = [btn_id for btn_id, text in buttons.items() if text == message.text][0]
 
     if btn_id is None:
         return
 
-    # data = await state.get_data()
-    # queue = data.get('queue')
-    # queue.append(btn_id)
-    # await state.update_data(queue=queue)
-
     reply_msg: str = shit.get_reply(btn_id)
     keyboard_btn: List[str] = shit.get_btns(btn_id)
-    keyboard = build_markup(keyboard_btn, btn_id)
+    keyboard = build_markup(current_path=btn_id,
+                            buttons=keyboard_btn)
 
     if keyboard is not None:
         await message.answer(reply_msg, reply_markup=keyboard)
     else:
         await message.answer(reply_msg)
 
-@dp.callback_query_handler(lambda c: c.data == 'Назад', state='*')
-async def query_back(call: types.CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    msg_id = call.message.message_id
-    queue = data.get('queue')
-    current_queue: List[str] = queue.get(msg_id)
-    if len(current_queue) == 1:
-        current_queue.insert(0, current_queue[0][:3])
-    current_queue.pop()
-    btn_id = current_queue[-1] #get last btn_id
-    queue[msg_id] = current_queue
-    await state.update_data(queue=queue)
-    msg_repl: str = shit.get_reply(btn_id)
-    keyboard_btn: Dict[str, str] = shit.get_btns(btn_id)
-    keyboard = build_markup(keyboard_btn, btn_id)
+@dp.callback_query_handler(lambda c: c.data.startswith('back:'))
+async def query_back(call: types.CallbackQuery):
+    current_path = call.data.split(':')
+    current_path.pop()
+    last_btn = current_path[-1]
+    current_path = ':'.join(current_path[1:])
+    msg_repl: str = shit.get_reply(last_btn)
+    keyboard_btn: Dict[str, str] = shit.get_btns(last_btn)
+    keyboard = build_markup(current_path, keyboard_btn)
 
     if keyboard is None:
         await call.message.edit_text(msg_repl)
@@ -103,30 +79,13 @@ async def query_back(call: types.CallbackQuery, state: FSMContext):
     await call.message.edit_text(msg_repl)
     await call.message.edit_reply_markup(reply_markup=keyboard)
 
-@dp.callback_query_handler(lambda c: True, state='*')
-async def query_handler(call: types.CallbackQuery, state: FSMContext):
-    btn_id = call.data
-    msg_id = call.message.message_id
 
-    if btn_id == '0':
-        btn_id == '1'
-
-    data = await state.get_data()
-    queue: Dict[str, str] = data.get('queue')
-    current_queue: List[str] = queue.get(msg_id, None)
-
-    if current_queue is None:
-        current_queue = list()
-        current_queue.append(btn_id)
-    else:
-        current_queue.append(btn_id)
-
-    queue[msg_id] = current_queue
-
-    await state.update_data(queue=queue)
-
+@dp.callback_query_handler(lambda c: True)
+async def query_handler(call: types.CallbackQuery):
+    current_path = call.data
+    btn_id = current_path.split(':')[-1]
     keyboard_btn = shit.get_btns(btn_id)
-    keyboard = build_markup(keyboard_btn, btn_id)
+    keyboard = build_markup(current_path, keyboard_btn)
     msg_repl = shit.get_reply(btn_id)
 
     if keyboard is None:
@@ -139,6 +98,7 @@ async def query_handler(call: types.CallbackQuery, state: FSMContext):
 
     await call.message.edit_text(msg_repl)
     await call.message.edit_reply_markup(reply_markup=keyboard)
+
 
 if __name__ == '__main__':
     from aiogram import executor

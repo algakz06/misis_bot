@@ -17,7 +17,7 @@ class Shit():
             return None
         self.buttons: Dict[str, str] = {}
         for btn in data:
-            self.buttons[btn.get('text', '')] = btn.get('path', '')
+            self.buttons[btn.get('path', '')] = btn.get('text', '')
         return self.buttons
 
     def get_reply(self, id: str) -> Union[str, None]:
@@ -38,7 +38,7 @@ class Shit():
         buttons: Dict[str, str] = {}
         try:
             for btn in r:
-                buttons[btn.get('text', '')] = btn.get('path', '')
+                buttons[btn.get('path', '')] = btn.get('text', '')
         except ValueError as e:
             log.error(f'ERROR: {e}, id: {id}')
             return None
