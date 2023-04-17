@@ -15,6 +15,7 @@ from app.config import log
 from app.keyboards import reply_keyboards
 from app.keyboards.reply_keyboards import build_markup
 from app.utils.shit import Shit
+from app.utils.db import DBManager
 #endregion
 
 
@@ -22,7 +23,10 @@ from app.utils.shit import Shit
 bot = Bot(config.tg_token)
 dp = Dispatcher(bot)
 shit = Shit()
+db = DBManager()
 #endregion
+
+admin_only = lambda message: db.is_admin(message.from_user.id) if isinstance(message, types.Message) else db.is_admin(message)
 
 locations = {
     'Вход в английский корпус':	(55.726497, 37.606416),
@@ -51,10 +55,21 @@ locations = {
 buttons: Dict[str, str] = shit.get_all_buttons()
 
 @dp.message_handler(commands=['start'])
-async def start(message: types.Message, state: FSMContext):
+async def start(message: types.Message):
     buttons = shit.get_btns('1')
     reply_msg = shit.get_reply('0')
     await message.answer(reply_msg, reply_markup=reply_keyboards.build_markup('', buttons, True))
+    db.insert_bot_user(message.from_user.id)
+
+@dp.message_handler(admin_only, commands=['reload'])
+async def resend_keyboard():
+    buttons = shit.get_btns('1')
+    for user_id in db.get_users():
+        await bot.send_message(
+            chat_id=user_id,
+            text='Клавиатура обновилась',
+            reply_markup=reply_keyboards.build_markup('', buttons, True)
+        )
 
 @dp.message_handler()
 async def handler(message: types.Message) -> None:

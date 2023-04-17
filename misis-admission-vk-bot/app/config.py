@@ -8,6 +8,11 @@ vk_token = os.getenv('VK_TOKEN')
 vk_group_id = os.getenv('VK_GROUP_ID')
 backend_url = 'misis-admission.seizure.icu:80'
 
+POSTGRES_HOST = os.getenv('POSTGRES_HOST', '')
+POSTGRES_USER = os.getenv("POSTGRES_USER", '')
+POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', '')
+POSTGRES_DB = os.getenv('POSTGRES_DB', '')
+
 # region Logging
 # Create a logger instance
 log = logging.getLogger('main.py-vk')

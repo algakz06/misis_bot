@@ -7,6 +7,11 @@ load_dotenv()
 tg_token = os.getenv("TG_TOKEN")
 backend_url = 'misis-admission.seizure.icu:80'
 
+POSTGRES_HOST = os.getenv('POSTGRES_HOST', '')
+POSTGRES_USER = os.getenv("POSTGRES_USER", '')
+POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', '')
+POSTGRES_DB = os.getenv('POSTGRES_DB', '')
+
 # region Logging
 # Create a logger instance
 log = logging.getLogger('main.py-aiogram')

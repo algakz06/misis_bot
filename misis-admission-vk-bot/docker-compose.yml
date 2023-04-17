@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: algakz/misis-admission-telegram-bot:latest
+    image: algakz/misis-admission-vk-bot:latest
     restart: always
     env_file:
       - .env
@@ -15,4 +15,3 @@ services:
       - POSTGRES_DB=litra
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-
