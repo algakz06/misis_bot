@@ -7,6 +7,7 @@ from aiogram.dispatcher.filters import Text
 import asyncio
 import os
 from typing import Dict, List, Optional
+import re
 #endregion
 
 #region local imports
@@ -27,30 +28,6 @@ db = DBManager()
 #endregion
 
 admin_only = lambda message: db.is_admin(message.from_user.id) if isinstance(message, types.Message) else db.is_admin(message)
-
-locations = {
-    'Вход в английский корпус':	(55.726497, 37.606416),
-    'Вход в корпус А': (55.726962, 37.607838),
-    'Вход в корпус АВ':	(55.728068, 37.606949),
-    'Вход в корпус Б':	(55.728472, 37.609033),
-    'Вход в корпус В':	(55.728614, 37.610716),
-    'Вход в корпус Г':	(55.726975, 37.607154),
-    'Вход в корпус Д':	(55.727383, 37.606469),
-    'Вход в корпус Е':	(55.728484, 37.607646),
-    'Вход в корпус К':	(55.729822, 37.610312),
-    'Вход в корпус Л':	(55.728068, 37.606949),
-    'Вход в корпус Т':	(55.727286, 37.605205),
-    'Горняк-1':	(55.697194, 37.578429),
-    'Горняк-2':	(55.698054, 37.579476),
-    'ДСГ-5':	(55.739215, 37.542639),
-    'ДСГ-6':	(55.739590, 37.542354),
-    'Металлург-1':	(55.645949, 37.529914),
-    'Металлург-2':	(55.645528, 37.530213),
-    'Металлург-3':	(55.645197, 37.529068),
-    'Металлург-4':	(55.654467, 37.520895),
-    'Спорт зал Беляево':	(55.644699, 37.529732),
-    'Спорт зал Горного':	(55.726964, 37.605577)
-}
 
 buttons: Dict[str, str] = shit.get_all_buttons()
 
@@ -73,10 +50,6 @@ async def resend_keyboard():
 
 @dp.message_handler()
 async def handler(message: types.Message) -> None:
-    if message.text == 'Где? Что?!':
-        await message.answer('Узнай точную геолокацию того, что тебя интересует!',
-                             reply_markup=reply_keyboards.get_location_markup())
-        return
     if message.text not in buttons.values():
         print('ERROR: no message')
         return
@@ -118,17 +91,6 @@ async def query_back(call: types.CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=keyboard)
 
 
-@dp.callback_query_handler(lambda c: c.data.startswith('location:'))
-async def send_locations(call: types.CallbackQuery):
-    loc = call.data.split('location:')[-1]
-    lat, lon = locations.get(loc, None)
-    loc += '📍'
-    await call.message.answer(loc)
-    await call.message.answer_location(
-        latitude=lat,
-        longitude=lon
-        )
-
 @dp.callback_query_handler(lambda c: True)
 async def query_handler(call: types.CallbackQuery):
     current_path = call.data
@@ -136,6 +98,17 @@ async def query_handler(call: types.CallbackQuery):
     keyboard_btn = shit.get_btns(btn_id)
     keyboard = build_markup(current_path, keyboard_btn)
     msg_repl = shit.get_reply(btn_id)
+
+    lat_lon = re.findall(r'\d+\.\d+', msg_repl)
+    if lat_lon:
+        lat, lon = lat_lon
+        msg_repl = msg_repl.split('[')[0].strip()
+        await call.message.answer(msg_repl)
+        await call.message.answer_location(
+            latitude=lat,
+            longitude=lon
+        )
+        return
 
     if keyboard is None:
         await call.message.edit_text(msg_repl)

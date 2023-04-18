@@ -35,13 +35,13 @@ class DBManager:
     def __del__(self) -> None:
         self.close_connection()
 
-    def insert_bot_user(self, user_id: int, is_admin: False) -> None:
+    def insert_bot_user(self, user_id: str, is_admin: False) -> None:
         self.session.merge(BotUser(user_id=user_id))
         self.session.commit()
 
         log.info(f'bot_user had been inserted {user_id}')
 
-    def is_admin(self, id: int) -> bool:
+    def is_admin(self, id: str) -> bool:
         try:
             self.session.query(BotUser).filter(BotUser.user_id == id, BotUser.is_admin == True).one()
             return True
