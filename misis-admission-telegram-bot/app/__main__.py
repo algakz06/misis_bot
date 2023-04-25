@@ -130,7 +130,7 @@ async def send_stat():
         while True:
             data = db.get_statistics()
             shit.send_stats(data)
-            await asyncio.sleep(300)
+            await asyncio.sleep(30)  # TODO: Increase after testing
 
 async def on_startup(_):
     asyncio.create_task(send_stat())

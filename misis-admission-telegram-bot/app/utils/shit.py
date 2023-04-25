@@ -50,7 +50,7 @@ class Shit():
             'events': data
         }
 
-        r = requests.post('https://misis-admission.seizure.icu/stats', json=body)
+        r = requests.post('https://misis-admission.seizure.icu/telemetry', json=body)
 
         log.info(f'send_stats: {r.status_code}, data: {data}')
 
