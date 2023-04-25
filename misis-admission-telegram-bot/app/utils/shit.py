@@ -31,7 +31,6 @@ class Shit():
             return None
 
 
-
     def get_btns(self, id: str) -> Union[Dict[str, str], None]:
         r = requests.get(f'https://misis-admission.seizure.icu/btns/{id}')
         r = r.json()
@@ -46,6 +45,12 @@ class Shit():
             log.info(f'id={id}, buttons={buttons}')
             return buttons
 
-if __name__ == '__main__':
-    shit = Shit()
-    pprint(shit.get_all_buttons())
+    def send_stats(self, data: List[Dict[str, Union[str, int]]]) -> None:
+        body = {
+            'events': data
+        }
+
+        r = requests.post('https://misis-admission.seizure.icu/stats', json=body)
+
+        log.info(f'send_stats: {r.status_code}, data: {data}')
+

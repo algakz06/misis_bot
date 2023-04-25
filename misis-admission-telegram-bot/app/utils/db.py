@@ -3,9 +3,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
 from typing import List
+import time
 
 from app import config
-from app.utils.models import Base, BotUser
+from app.utils.models import Base, BotUser, ButtonPress
 from app.config import log
 
 class DBManager:
@@ -35,11 +36,17 @@ class DBManager:
     def __del__(self) -> None:
         self.close_connection()
 
-    def insert_bot_user(self, user_id: int, is_admin: False) -> None:
+    def insert_bot_user(self, user_id: int) -> None:
         self.session.merge(BotUser(user_id=user_id))
         self.session.commit()
 
         log.info(f'bot_user had been inserted {user_id}')
+
+    def insert_button_press(self, user_id: int, button_id: str) -> None:
+        self.session.merge(ButtonPress(user_id=user_id, button_id=button_id))
+        self.session.commit()
+
+        log.info(f'button_press had been inserted {user_id}, {button_id}')
 
     def is_admin(self, id: int) -> bool:
         try:
@@ -47,6 +54,18 @@ class DBManager:
             return True
         except NoResultFound:
             return False
+
+    def get_statistics(self):
+        data = [{
+            'user_id': item.user_id,
+            'platform': 'tg',
+            'button_id': item.button_id,
+            'timestamp': int(item.pressed_at.timestamp())
+        } for item in self.session.query(ButtonPress).all()]
+
+        self.session.query(ButtonPress).delete()
+
+        return data
 
     def get_users(self) -> List[int]:
         return [user.user_id for user in self.session.query(BotUser).all()]

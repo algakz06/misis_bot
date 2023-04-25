@@ -29,8 +29,6 @@ db = DBManager()
 
 admin_only = lambda message: db.is_admin(message.from_user.id) if isinstance(message, types.Message) else db.is_admin(message)
 
-buttons: Dict[str, str] = shit.get_all_buttons()
-
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
     buttons = shit.get_btns('1')
@@ -50,6 +48,8 @@ async def resend_keyboard():
 
 @dp.message_handler()
 async def handler(message: types.Message) -> None:
+    buttons = shit.get_btns('1')
+
     if message.text not in buttons.values():
         print('ERROR: no message')
         return
@@ -68,6 +68,9 @@ async def handler(message: types.Message) -> None:
         await message.answer(reply_msg, reply_markup=keyboard)
     else:
         await message.answer(reply_msg)
+
+    db.insert_button_press(message.from_user.id, btn_id)
+
 
 @dp.callback_query_handler(lambda c: c.data.startswith('back:'))
 async def query_back(call: types.CallbackQuery):
@@ -99,6 +102,8 @@ async def query_handler(call: types.CallbackQuery):
     keyboard = build_markup(current_path, keyboard_btn)
     msg_repl = shit.get_reply(btn_id)
 
+    db.insert_button_press(call.from_user.id, btn_id)
+
     lat_lon = re.findall(r'\d+\.\d+', msg_repl)
     if lat_lon:
         lat, lon = lat_lon
@@ -121,15 +126,16 @@ async def query_handler(call: types.CallbackQuery):
     await call.message.edit_text(msg_repl)
     await call.message.edit_reply_markup(reply_markup=keyboard)
 
+async def send_stat():
+        while True:
+            data = db.get_statistics()
+            shit.send_stats(data)
+            await asyncio.sleep(300)
+
+async def on_startup(_):
+    asyncio.create_task(send_stat())
 
 if __name__ == '__main__':
     from aiogram import executor
-    async def task():
-        while True:
-            buttons = shit.get_all_buttons()
-            await asyncio.sleep(30)
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(task())
-
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)

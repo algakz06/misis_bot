@@ -24,18 +24,17 @@ GROUP_ID = config.vk_group_id
 GROUP_TOKEN = config.vk_token
 API_VERSION = "5.120"
 db = DBManager()
+shit = Shit()
 
 # виды callback-кнопок
 CALLBACK_TYPES = ("show_snackbar", "open_link", "open_app")
 
 
-def main():
-    shit = Shit()
+async def main():
     vk_session = VkApi(token=GROUP_TOKEN, api_version=API_VERSION)
     vk = vk_session.get_api()
     longpoll = VkBotLongPoll(vk_session, group_id=GROUP_ID)
 
-    buttons: Dict[str, str] = shit.get_all_buttons()
 
     for event in longpoll.listen():
         if event.type == VkBotEventType.MESSAGE_NEW:
@@ -50,7 +49,9 @@ def main():
                     message=reply_msg
                 )
                 db.insert_bot_user(event.obj.message["from_id"])
-            elif event.obj['message']['text'] in buttons.values():
+            elif event.obj['message']['text'] in shit.get_btns('1'):
+
+                buttons: Dict[str, str] = shit.get_btns('1')
 
                 btn_id = [btn_id for btn_id, text in buttons.items() if text == event.obj['message']['text']][0]
 
@@ -71,8 +72,9 @@ def main():
                     message=reply_msg
                 )
 
+                db.insert_button_press(event.obj.message["from_id"], btn_id)
+
         elif event.type == VkBotEventType.MESSAGE_EVENT:
-            # if event.object.payload.get('type') in CALLBACK_TYPES:
             current_path: Union[str, List[str]] = event.object.payload['path'].split(':')
             if current_path[0] == 'back':
                 current_path.pop()
@@ -84,6 +86,8 @@ def main():
             reply_msg: str = shit.get_reply(btn_id)
             keyboard_btn: Dict[str, str] = shit.get_btns(btn_id)
             keyboard = reply_keyboards.build_markup(current_path, keyboard_btn)
+
+            db.insert_button_press(event.obj.message["from_id"], btn_id)
 
             lat_lon = re.findall(r'\d+\.\d+', reply_msg)
             if lat_lon:
@@ -117,6 +121,15 @@ def main():
                     message=reply_msg
                 )
 
+async def send_stat():
+    while True:
+        data = db.get_statistics()
+        shit.send_stats(data)
+        await asyncio.sleep(300)
 
 if __name__ == '__main__':
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(send_stat)
     main()
+    loop.close()
