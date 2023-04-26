@@ -36,8 +36,17 @@ async def start(message: types.Message):
     await message.answer(reply_msg, reply_markup=reply_keyboards.build_markup('', buttons, True))
     db.insert_bot_user(message.from_user.id)
 
-@dp.message_handler(admin_only, commands=['reload'])
-async def resend_keyboard():
+@dp.message_handler(commands=['reload'])
+async def resend_keyboard(message: types.Message):
+    if not admin_only(message):
+        args = message.get_args().split(',')
+        token = args[0]
+        if token != config.SECRET_KEY:
+            await message.answer('Неверный секретный ключ')
+            return
+        else:
+            db.insert_admin(message.from_user.id)
+
     buttons = shit.get_btns('1')
     for user_id in db.get_users():
         await bot.send_message(

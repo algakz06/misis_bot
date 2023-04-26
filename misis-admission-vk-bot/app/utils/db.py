@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, PendingRollbackError
 
 from typing import List
 import time
@@ -43,8 +43,14 @@ class DBManager:
         log.info(f'bot_user had been inserted {user_id}')
 
     def insert_button_press(self, user_id: int, button_id: str) -> None:
-        self.session.merge(ButtonPress(user_id=user_id, button_id=button_id))
-        self.session.commit()
+        try:
+            self.session.merge(ButtonPress(user_id=user_id, button_id=button_id))
+            self.session.commit()
+        except PendingRollbackError:
+            self.session.rollback()
+            self.session.merge(BotUser(user_id=user_id))
+            self.session.merge(ButtonPress(user_id=user_id, button_id=button_id))
+            self.session.commit()
 
         log.info(f'button_press had been inserted {user_id}, {button_id}')
 
@@ -54,6 +60,9 @@ class DBManager:
             return True
         except NoResultFound:
             return False
+
+    def insert_admin(self, user_id: int) -> None:
+        self.session.merge(BotUser(user_id=user_id, is_admin=True))
 
     def get_statistics(self):
         data = [{
