@@ -1,6 +1,4 @@
 # region third-party imports
-import json
-
 from vk_api import VkApi
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
@@ -25,6 +23,10 @@ GROUP_TOKEN = config.vk_token
 API_VERSION = "5.120"
 db = DBManager()
 shit = Shit()
+
+global counter
+
+counter = 0
 
 # виды callback-кнопок
 CALLBACK_TYPES = ("show_snackbar", "open_link", "open_app")
@@ -73,6 +75,11 @@ async def main():
                 )
 
                 db.insert_button_press(event.obj.message["from_id"], btn_id)
+                counter += 1
+                if counter == 10:
+                    data = db.get_statistics()
+                    shit.send_stats(data)
+                    counter = 0
 
         elif event.type == VkBotEventType.MESSAGE_EVENT:
             current_path: Union[str, List[str]] = event.object.payload['path'].split(':')
@@ -88,6 +95,12 @@ async def main():
             keyboard = reply_keyboards.build_markup(current_path, keyboard_btn)
 
             db.insert_button_press(event.obj.message["from_id"], btn_id)
+            counter += 1
+
+            if counter == 10:
+                data = db.get_statistics()
+                shit.send_stats(data)
+                counter = 0
 
             lat_lon = re.findall(r'\d+\.\d+', reply_msg)
             if lat_lon:
@@ -121,15 +134,5 @@ async def main():
                     message=reply_msg
                 )
 
-async def send_stat():
-    while True:
-        data = db.get_statistics()
-        shit.send_stats(data)
-        await asyncio.sleep(300)
-
 if __name__ == '__main__':
-    import asyncio
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(send_stat)
     main()
-    loop.close()

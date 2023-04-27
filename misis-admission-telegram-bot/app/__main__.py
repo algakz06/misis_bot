@@ -1,12 +1,7 @@
 #region third-party imports
 from aiogram import Dispatcher, Bot, types
-from aiogram.dispatcher.storage import FSMContext
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.dispatcher.filters import Text
 import asyncio
-import os
-from typing import Dict, List, Optional
+from typing import Dict, List
 import re
 #endregion
 
