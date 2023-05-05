@@ -104,12 +104,12 @@ async def query_handler(call: types.CallbackQuery):
     btn_id = current_path.split(':')[-1]
     keyboard_btn = shit.get_btns(btn_id)
     keyboard = build_markup(current_path, keyboard_btn)
-    msg_repl = shit.get_reply(btn_id) or ''
+    msg_repl = shit.get_reply(btn_id)
 
     db.insert_button_press(call.from_user.id, btn_id)
 
-    lat_lon = re.findall(r'\d+\.\d+', msg_repl)
-    if lat_lon:
+    lat_lon = re.findall(r'\d+\.\d+', msg_repl or '')
+    if lat_lon and len(lat_lon) >= 2:
         lat, lon = lat_lon
         msg_repl = msg_repl.split('[')[0].strip()
         await call.message.answer(msg_repl)

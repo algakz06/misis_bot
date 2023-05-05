@@ -1,10 +1,8 @@
 import requests
-from pprint import pprint
 from typing import List, Dict, Union, Optional
 import json
 
 from app.config import log
-
 
 
 class Shit():
