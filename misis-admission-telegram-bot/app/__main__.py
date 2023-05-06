@@ -212,7 +212,7 @@ async def query_back(call: types.CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=keyboard)
 
 
-@dp.callback_query_handler(lambda: True)
+@dp.callback_query_handler()
 async def query_handler(call: types.CallbackQuery):
     if not db.user_exists(call.from_user.id):
         await call.message.answer("Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start")
