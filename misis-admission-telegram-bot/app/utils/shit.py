@@ -49,10 +49,12 @@ class Shit:
         log.info(f"send_stats: {r.status_code}, data: {data}")
 
     def send_bot_user(
-        self, user_id: str, first_name: str, last_name: str, city: str, email: str, phone: str
+        self, user_id: str, username: str, first_name: str,
+        last_name: str, city: str, email: str, phone: str
     ) -> None:
         body = {
             "user_id": user_id,
+            "username": username,
             "first_name": first_name,
             "last_name": last_name,
             "platform": "tg",
@@ -66,3 +68,4 @@ class Shit:
         )
 
         log.info(f"send_bot_user: {r.status_code}, data: {body}")
+

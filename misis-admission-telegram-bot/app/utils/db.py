@@ -40,6 +40,7 @@ class DBManager:
     def insert_bot_user(
         self,
         user_id: int,
+        username: str,
         first_name: str,
         last_name: str,
         phone: str,
@@ -49,6 +50,7 @@ class DBManager:
         self.session.merge(
             BotUser(
                 user_id=user_id,
+                username=username,
                 first_name=first_name,
                 last_name=last_name,
                 phone=phone,
@@ -59,7 +61,7 @@ class DBManager:
         self.session.commit()
 
         log.info(
-            f"bot_user had been inserted {user_id}, {first_name}, {last_name}, {phone}, {city}, {email}"
+            f"bot_user had been inserted {user_id}, {username}, {first_name}, {last_name}, {phone}, {city}, {email}"
         )
 
     def insert_button_press(self, user_id: int, button_id: str) -> None:

@@ -66,14 +66,14 @@ async def get_Last_name(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["last_name"] = message.text
-    await message.answer("Окей, двигаемся дальше\n\nНапиши откуда ты")
+    await message.answer("Окей, двигаемся дальше\n\nОтправь свой город (например, Москва)")
     await User.city.set()
 
 
 @dp.message_handler(state=User.city)
 async def get_city(message: types.Message, state: FSMContext):
     if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
-        await message.answer('Неверный формат, напиши свой город, например "Москва"')
+        await message.answer('Неверный формат!')
         return
     async with state.proxy() as data:
         data["city"] = message.text
@@ -120,6 +120,7 @@ async def welcome(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         db.insert_bot_user(
             message.from_user.id,
+            message.from_user.username,
             data["first_name"],
             data["last_name"],
             data["phone"],
@@ -128,6 +129,7 @@ async def welcome(message: types.Message, state: FSMContext):
         )
         shit.send_bot_user(
             message.from_user.id,
+            message.from_user.username,
             data["first_name"],
             data["last_name"],
             data["city"],

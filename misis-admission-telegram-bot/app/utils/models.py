@@ -11,6 +11,7 @@ class BotUser(Base):
     __tablename__ = "users"
 
     user_id = Column(BigInteger, primary_key=True)
+    username = Column(VARCHAR(32), nullable=True, default=None)
     is_admin = Column(BOOLEAN, default=False)
     first_name = Column(VARCHAR(20))
     last_name = Column(VARCHAR(20))
