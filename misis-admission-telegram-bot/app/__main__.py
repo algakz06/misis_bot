@@ -214,6 +214,7 @@ async def query_back(call: types.CallbackQuery):
 
 @dp.callback_query_handler()
 async def query_handler(call: types.CallbackQuery):
+    await call.answer()
     if not db.user_exists(call.from_user.id):
         await call.message.answer("Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start")
         return
