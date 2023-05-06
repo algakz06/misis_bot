@@ -106,4 +106,7 @@ class DBManager:
     def get_users(self) -> List[int]:
         return [user.user_id for user in self.session.query(BotUser).all()]
 
+    def user_exists(self, uid: int) -> bool:
+        return self.session.query(BotUser.user_id == uid).first() is not None
+
     # endregion
