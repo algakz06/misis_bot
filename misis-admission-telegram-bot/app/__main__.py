@@ -36,15 +36,13 @@ admin_only = (
 
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    await message.reply(
-        """
-    Привет!\n
-    Это телеграмм-бот НИТУ МИСИС,\
-    здесь ты сможешь получить ответ на все свои вопросы\n
-    Только перед этим нам надо получить от тебя немного информации
-    """
-    )
-    await message.answer("Для начала напиши свое имя")
+    await message.reply("""
+Привет!\n
+Это телеграмм-бот НИТУ МИСИС,\
+здесь ты сможешь получить ответ на все свои вопросы\n
+Только перед этим нам надо получить от тебя немного информации
+""")
+    await message.answer("Для начала отправь мне свое имя")
     await User.first_name.set()
 
 
@@ -55,7 +53,7 @@ async def get_first_name(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["first_name"] = message.text
-    await message.answer("Записал)\nТеперь напиши свою фамилию")
+    await message.answer("Записал!\n\nТеперь отправь свою фамилию")
     await User.last_name.set()
 
 
@@ -79,7 +77,7 @@ async def get_city(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["city"] = message.text
-    await message.answer("Отлично, теперь напиши свой email")
+    await message.answer("Почти закончили! Напиши свой email")
     await User.email.set()
 
 
@@ -87,12 +85,12 @@ async def get_city(message: types.Message, state: FSMContext):
 async def get_email(message: types.Message, state: FSMContext):
     if not re.match("^[A-Za-z0-9]{2,20}@[A-Za-z]{2,20}.[A-Za-z]{2,20}$", message.text):
         await message.answer(
-            'Неверный формат, напиши свой email, например "lll@gmail.com"'
+            'Неверный формат! Пример "lll@gmail.com"'
         )
         return
     async with state.proxy() as data:
         data["email"] = message.text
-    await message.answer("Напиши свой номер телефона")
+    await message.answer("Последний шаг — твой номер телефона!")
     await User.phone.set()
 
 
@@ -106,13 +104,13 @@ async def welcome(message: types.Message, state: FSMContext):
         and len(message.text) < 11
     ):
         await message.answer(
-            'Неверный формат, напиши свой номер телефона, например "+7 999 999 99 99"'
+            'Неверный формат! Пример: "+7 999 999 99 99"'
         )
         return
     async with state.proxy() as data:
         data["phone"] = message.text
     await message.answer(
-        "Спасибо за регистрацию!\n\nТеперь ты можешь получить доступ к боту"
+        "Спасибо за регистрацию и добро пожаловать!"
     )
     buttons = shit.get_btns("1")
     reply_msg = shit.get_reply("0")
