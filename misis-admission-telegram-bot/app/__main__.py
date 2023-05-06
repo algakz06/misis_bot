@@ -163,6 +163,7 @@ async def resend_keyboard(message: types.Message):
 async def handler(message: types.Message) -> None:
     if not db.user_exists(message.from_user.id):
         await message.answer("Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start")
+        return
     buttons: Union[Dict[str, str], None] = shit.get_btns("1")
 
     if not buttons:
@@ -215,6 +216,7 @@ async def query_back(call: types.CallbackQuery):
 async def query_handler(call: types.CallbackQuery):
     if not db.user_exists(call.from_user.id):
         await call.message.answer("Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start")
+        return
     current_path = call.data
     btn_id = current_path.split(":")[-1]
     keyboard_btn = shit.get_btns(btn_id)
