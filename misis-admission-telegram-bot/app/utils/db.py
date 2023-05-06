@@ -9,8 +9,9 @@ from app import config
 from app.utils.models import Base, BotUser, ButtonPress
 from app.config import log
 
+
 class DBManager:
-    #region inner methods
+    # region inner methods
     def __init__(self):
         self._connect()
         self._recreate_table()
@@ -18,8 +19,8 @@ class DBManager:
 
     def _connect(self) -> None:
         self.engine = create_engine(
-            f'postgresql://{config.POSTGRES_USER}:{config.POSTGRES_PASSWORD}@{config.POSTGRES_HOST}/{config.POSTGRES_DB}',
-            echo=True
+            f"postgresql://{config.POSTGRES_USER}:{config.POSTGRES_PASSWORD}@{config.POSTGRES_HOST}/{config.POSTGRES_DB}",
+            echo=True,
         )
 
     def _recreate_table(self) -> None:
@@ -36,11 +37,30 @@ class DBManager:
     def __del__(self) -> None:
         self.close_connection()
 
-    def insert_bot_user(self, user_id: int) -> None:
-        self.session.merge(BotUser(user_id=user_id))
+    def insert_bot_user(
+        self,
+        user_id: int,
+        first_name: str,
+        last_name: str,
+        phone: str,
+        city: str,
+        email: str,
+    ) -> None:
+        self.session.merge(
+            BotUser(
+                user_id=user_id,
+                first_name=first_name,
+                last_name=last_name,
+                phone=phone,
+                city=city,
+                email=email,
+            )
+        )
         self.session.commit()
 
-        log.info(f'bot_user had been inserted {user_id}')
+        log.info(
+            f"bot_user had been inserted {user_id}, {first_name}, {last_name}, {phone}, {city}, {email}"
+        )
 
     def insert_button_press(self, user_id: int, button_id: str) -> None:
         try:
@@ -52,11 +72,13 @@ class DBManager:
             self.session.merge(ButtonPress(user_id=user_id, button_id=button_id))
             self.session.commit()
 
-        log.info(f'button_press had been inserted {user_id}, {button_id}')
+        log.info(f"button_press had been inserted {user_id}, {button_id}")
 
     def is_admin(self, id: int) -> bool:
         try:
-            self.session.query(BotUser).filter(BotUser.user_id == id, BotUser.is_admin == True).one()
+            self.session.query(BotUser).filter(
+                BotUser.user_id == id, BotUser.is_admin == True
+            ).one()
             return True
         except NoResultFound:
             return False
@@ -65,12 +87,15 @@ class DBManager:
         self.session.merge(BotUser(user_id=user_id, is_admin=True))
 
     def get_statistics(self):
-        data = [{
-            'user_id': item.user_id,
-            'platform': 'tg',
-            'button_id': item.button_id,
-            'timestamp': int(item.pressed_at.timestamp())
-        } for item in self.session.query(ButtonPress).all()]
+        data = [
+            {
+                "user_id": item.user_id,
+                "platform": "tg",
+                "button_id": item.button_id,
+                "timestamp": int(item.pressed_at.timestamp()),
+            }
+            for item in self.session.query(ButtonPress).all()
+        ]
 
         self.session.query(ButtonPress).delete()
 
@@ -79,4 +104,4 @@ class DBManager:
     def get_users(self) -> List[int]:
         return [user.user_id for user in self.session.query(BotUser).all()]
 
-    #endregion
+    # endregion
