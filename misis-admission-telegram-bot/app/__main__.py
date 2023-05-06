@@ -5,18 +5,17 @@ from typing import Dict, Union
 import re
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-
+from aiogram.types import ReplyKeyboardRemove
 # endregion
 
 # region local imports
 from app import config
 from app.config import log
 from app.keyboards import reply_keyboards
-from app.keyboards.reply_keyboards import build_markup
+from app.keyboards.reply_keyboards import build_markup, reply_markup
 from app.utils.shit import Shit
 from app.utils.db import DBManager
 from app.utils.states import User
-
 # endregion
 
 
@@ -42,7 +41,8 @@ async def start(message: types.Message):
 здесь ты сможешь получить ответ на все свои вопросы\n
 Только перед этим нам надо получить от тебя немного информации
 """)
-    await message.answer("Для начала отправь мне свое имя")
+    await message.answer("Для начала отправь мне свое имя",
+                         reply_markup=ReplyKeyboardRemove())
     await User.first_name.set()
 
 
@@ -53,44 +53,47 @@ async def get_first_name(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["first_name"] = message.text
-    await message.answer("Записал!\n\nТеперь отправь свою фамилию")
+    await message.answer("Записал!\n\nТеперь отправь свою фамилию",
+                         reply_markup=ReplyKeyboardRemove())
     await User.last_name.set()
 
 
 @dp.message_handler(state=User.last_name)
 async def get_Last_name(message: types.Message, state: FSMContext):
     if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
-        await message.answer(
-            'Неверный формат, напиши свою фамилию, например "Коротков"'
-        )
+        await message.answer('Неверный формат, напиши свою фамилию, например "Коротков"',
+                             reply_markup=ReplyKeyboardRemove())
         return
     async with state.proxy() as data:
         data["last_name"] = message.text
-    await message.answer("Окей, двигаемся дальше\n\nОтправь свой город (например, Москва)")
+    await message.answer("Окей, двигаемся дальше\n\nОтправь свой город (например, Москва)",
+                         reply_markup=ReplyKeyboardRemove())
     await User.city.set()
 
 
 @dp.message_handler(state=User.city)
 async def get_city(message: types.Message, state: FSMContext):
     if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
-        await message.answer('Неверный формат!')
+        await message.answer('Неверный формат!',
+                             reply_markup=ReplyKeyboardRemove())
         return
     async with state.proxy() as data:
         data["city"] = message.text
-    await message.answer("Почти закончили! Напиши свой email")
+    await message.answer("Почти закончили! Напиши свой email",
+                         reply_markup=ReplyKeyboardRemove())
     await User.email.set()
 
 
 @dp.message_handler(state=User.email)
 async def get_email(message: types.Message, state: FSMContext):
     if not re.match("^[A-Za-z0-9]{2,20}@[A-Za-z]{2,20}.[A-Za-z]{2,20}$", message.text):
-        await message.answer(
-            'Неверный формат! Пример "lll@gmail.com"'
-        )
+        await message.answer('Неверный формат! Пример "lll@gmail.com"',
+                             reply_markup=ReplyKeyboardRemove())
         return
     async with state.proxy() as data:
         data["email"] = message.text
-    await message.answer("Последний шаг — твой номер телефона!")
+    await message.answer("Последний шаг — твой номер телефона!",
+                         reply_markup=ReplyKeyboardRemove())
     await User.phone.set()
 
 
@@ -103,15 +106,13 @@ async def welcome(message: types.Message, state: FSMContext):
         )
         and len(message.text) < 11
     ):
-        await message.answer(
-            'Неверный формат! Пример: "+7 999 999 99 99"'
-        )
+        await message.answer('Неверный формат! Пример: "+7 999 999 99 99"',
+                             reply_markup=ReplyKeyboardRemove())
         return
     async with state.proxy() as data:
         data["phone"] = message.text
-    await message.answer(
-        "Спасибо за регистрацию и добро пожаловать!"
-    )
+    await message.answer("Спасибо за регистрацию и добро пожаловать!",
+                         reply_markup=ReplyKeyboardRemove())
     buttons = shit.get_btns("1")
     reply_msg = shit.get_reply("0")
     await message.answer(
