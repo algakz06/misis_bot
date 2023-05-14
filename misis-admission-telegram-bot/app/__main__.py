@@ -98,7 +98,7 @@ async def get_city(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=User.email)
 async def get_email(message: types.Message, state: FSMContext):
-    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/email", json={"email": message.text}).json()["is_valid"]:
+    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/email?email={message.text}").json()["is_valid"]:
         await message.answer('Неверный формат! Пример "lll@gmail.com"',
                              reply_markup=ReplyKeyboardRemove())
         return
@@ -111,7 +111,7 @@ async def get_email(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=User.phone)
 async def get_phone_welcome(message: types.Message, state: FSMContext):
-    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/phone", json={"phone": message.text}).json()["is_valid"]:
+    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/phone_number?phone={message.text}").json()["is_valid"]:
         await message.answer('Неверный формат! Пример: "79999999999"',
                              reply_markup=ReplyKeyboardRemove())
         return
