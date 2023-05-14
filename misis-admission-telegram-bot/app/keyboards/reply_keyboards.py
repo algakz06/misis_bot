@@ -1,16 +1,21 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from app.config import log
+import app.config as config
 
 from typing import Optional, Union, Dict
+
 
 def build_markup(current_path: str,
                  buttons: Optional[Dict[str, str]],
                  is_main: bool = False) -> Union[ReplyKeyboardMarkup,
-                                        InlineKeyboardMarkup]:
+                                                 InlineKeyboardMarkup]:
     if is_main:
-        return reply_markup(buttons=buttons)
+        markup = reply_markup(buttons=buttons)
+        markup.add(KeyboardButton(config.PROFILE_BTN))
     else:
-        return inline_markup(current_path=current_path, buttons=buttons)
+        markup = inline_markup(current_path=current_path, buttons=buttons)
+    return markup
+
 
 def reply_markup(buttons: Optional[Dict[str, str]] = None) -> ReplyKeyboardMarkup:
     if buttons is None:
@@ -34,6 +39,7 @@ def reply_markup(buttons: Optional[Dict[str, str]] = None) -> ReplyKeyboardMarku
 
     return ReplyKeyboardMarkup(keyboard=keyboard)
 
+
 def inline_markup(current_path: str, buttons: Optional[Dict[str, str]] = None) -> InlineKeyboardMarkup:
     if buttons is None:
         return None
@@ -49,6 +55,5 @@ def inline_markup(current_path: str, buttons: Optional[Dict[str, str]] = None) -
 
     if len(current_path.split(':')) > 1:
         keyboard.append([InlineKeyboardButton('Назад', callback_data=f'back:{current_path}')])
-
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

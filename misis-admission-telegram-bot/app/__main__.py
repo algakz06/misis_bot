@@ -1,35 +1,47 @@
+#!/usr/bin/env python3
+
+"""Main module."""
+
 # region third-party imports
+import requests
 from aiogram import Dispatcher, Bot, types
 import asyncio
 from typing import Dict, Union
 import re
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from aiogram.types import ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.exceptions import MessageNotModified
 # endregion
 
 # region local imports
 from app import config
 from app.config import log
-from app.keyboards import reply_keyboards
+# from app.keyboards import reply_keyboards
 from app.keyboards.reply_keyboards import build_markup, reply_markup
-from app.utils.shit import Shit
-from app.utils.db import DBManager
-from app.utils.states import User
+from app.utils.bot_buttons import Layout
+from app.utils.users import BotUsers
+from app.utils.statistics import Statistics
+# from app.utils.db import DBManager
+from app.utils.states import User, UserEditProfile
+from app.keyboards import profile as profile_kbs
+from app.utils import replies
 # endregion
 
 
 # region app initialization
 bot = Bot(config.tg_token)
 dp = Dispatcher(bot, storage=MemoryStorage())
-shit = Shit()
-db = DBManager()
+layout = Layout()
+users = BotUsers()
+stats = Statistics()
+# db = DBManager()
 # endregion
 
-admin_only = (
-    lambda message: db.is_admin(message.from_user.id)
+is_admin = (
+    lambda message: users.admins.is_admin(message.from_user.id)
     if isinstance(message, types.Message)
-    else db.is_admin(message)
+    else users.admins.is_admin(message)
 )
 
 
@@ -59,7 +71,7 @@ async def get_first_name(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=User.last_name)
-async def get_Last_name(message: types.Message, state: FSMContext):
+async def get_last_name(message: types.Message, state: FSMContext):
     if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
         await message.answer('Неверный формат, напиши свою фамилию, например "Коротков"',
                              reply_markup=ReplyKeyboardRemove())
@@ -86,49 +98,34 @@ async def get_city(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=User.email)
 async def get_email(message: types.Message, state: FSMContext):
-    if not re.match("^[A-Za-z0-9]{2,20}@[A-Za-z]{2,20}.[A-Za-z]{2,20}$", message.text):
+    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/email", json={"email": message.text}).json()["is_valid"]:
         await message.answer('Неверный формат! Пример "lll@gmail.com"',
                              reply_markup=ReplyKeyboardRemove())
         return
     async with state.proxy() as data:
         data["email"] = message.text
-    await message.answer("Последний шаг — твой номер телефона!",
+    await message.answer("Последний шаг — твой номер телефона! Отправь его в формате 79999999999",
                          reply_markup=ReplyKeyboardRemove())
     await User.phone.set()
 
 
 @dp.message_handler(state=User.phone)
-async def welcome(message: types.Message, state: FSMContext):
-    if (
-        not re.match(
-            "^\\+?\\d{1,4}?[-.\\s]?\\(?\\d{1,3}?\\)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}$",
-            message.text,
-        )
-        and len(message.text) < 11
-    ):
-        await message.answer('Неверный формат! Пример: "+7 999 999 99 99"',
+async def get_phone_welcome(message: types.Message, state: FSMContext):
+    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/phone", json={"phone": message.text}).json()["is_valid"]:
+        await message.answer('Неверный формат! Пример: "79999999999"',
                              reply_markup=ReplyKeyboardRemove())
         return
     async with state.proxy() as data:
         data["phone"] = message.text
     await message.answer("Спасибо за регистрацию и добро пожаловать!",
                          reply_markup=ReplyKeyboardRemove())
-    buttons = shit.get_btns("1")
-    reply_msg = shit.get_reply("0")
+    buttons = layout.get_btns("1")
+    reply_msg = layout.get_reply("0")
     await message.answer(
-        reply_msg, reply_markup=reply_keyboards.build_markup("", buttons, True)
+        reply_msg, reply_markup=build_markup("", buttons, is_main=True)
     )
     async with state.proxy() as data:
-        db.insert_bot_user(
-            message.from_user.id,
-            message.from_user.username,
-            data["first_name"],
-            data["last_name"],
-            data["phone"],
-            data["city"],
-            data["email"],
-        )
-        shit.send_bot_user(
+        users.add(
             message.from_user.id,
             message.from_user.username,
             data["first_name"],
@@ -140,32 +137,242 @@ async def welcome(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+@dp.message_handler(commands=["elevate"])
+async def elevate_to_admin(message: types.Message):
+    # Get token as the message argument
+    token = message.get_args().split()[0]
+    is_elevated = users.admins.add(message.from_user.id, token)
+    if is_elevated:
+        await message.answer("Вы теперь администратор!")
+        return
+    await message.answer("Неверный токен")
+
+
 @dp.message_handler(commands=["reload"])
 async def resend_keyboard(message: types.Message):
-    if not admin_only(message):
-        args = message.get_args().split(",")
-        token = args[0]
-        if token != config.SECRET_KEY:
-            await message.answer("Неверный секретный ключ")
-            return
-        else:
-            db.insert_admin(message.from_user.id)
+    if not is_admin(message):
+        await message.answer("Вы не администратор!")
+        return
 
-    buttons = shit.get_btns("1")
-    for user_id in db.get_users():
+    buttons = layout.get_btns("1")
+    for user_id in users.get_ids():
         await bot.send_message(
             chat_id=user_id,
             text="Клавиатура обновилась",
-            reply_markup=reply_keyboards.build_markup("", buttons, True),
+            reply_markup=build_markup("", buttons, True)
         )
+
+
+@dp.message_handler(lambda message: message.text == config.PROFILE_BTN)
+async def profile_info(message: types.Message):
+    """Send user profile info and edit buttons."""
+    if not users.user_exists(message.from_user.id):
+        await message.answer(replies.not_registered(message.from_user.first_name))
+        return
+    await bot.send_message(message.from_user.id,
+                           replies.profile_info(users.get(message.from_user.id)),
+                           reply_markup=profile_kbs.inlProfileMenu)
+
+
+def get_profile_edit_fields_kb() -> InlineKeyboardMarkup:
+    """Get inline keyboard with profile fields for editing."""
+    kb = InlineKeyboardMarkup()
+    fields = {
+        'first_name': 'Имя',
+        'last_name': 'Фамилия',
+        'city': 'Город',
+        'email': 'Email',
+        'phone': 'Телефон',
+    }
+    for key in fields:
+        kb.add(InlineKeyboardButton(fields[key], callback_data=f'profile:edit:{key}'))
+    kb.add(InlineKeyboardButton('Готово', callback_data='profile:edit:done'))
+    return kb
+
+
+@dp.callback_query_handler(lambda c: c.data == 'profile:edit')
+async def edit_profile(call: types.CallbackQuery, secondary_run: bool = False) -> None:
+    """Edit user profile."""
+    keyboard = get_profile_edit_fields_kb()
+    if not secondary_run:
+        await call.answer()
+        await call.message.edit_text(replies.profile_info(users.get(call.from_user.id)),
+                                     reply_markup=keyboard)
+    else:
+        await bot.send_message(call.from_user.id,
+                               replies.profile_info(users.get(call.from_user.id)),
+                               reply_markup=keyboard)
+    mkb_remove = await call.message.answer("Убираю основную клавиатуру...", reply_markup=ReplyKeyboardRemove())
+    await mkb_remove.delete()
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('profile:edit:') and
+                           not c.data.startswith('profile:edit:skill:') and
+                           not c.data == 'profile:edit:done')
+async def edit_profile_action(call: types.CallbackQuery, state: FSMContext) -> None:
+    """Edit user profile - select action."""
+    await call.answer()
+    user_data = db.get_user_data(call.from_user.id)
+    await state.update_data(profile_call=call)
+    fn = lambda x: f'profile:edit:{x}'
+    if call.data == fn('first_name'):
+        await call.message.edit_text(replies.profile_edit_first_name(user_data['first_name'],
+                                                                     user_data['last_name']))
+        await state.set_state(UserEditProfile.first_name)
+    elif call.data == fn('last_name'):
+        await call.message.edit_text(replies.profile_edit_last_name(user_data['first_name'],
+                                                                    user_data['last_name']))
+        await state.set_state(UserEditProfile.last_name)
+    elif call.data == fn('birthday'):
+        await call.message.edit_text(replies.profile_edit_birthday(user_data['birthday']))
+        await state.set_state(UserEditProfile.birthday)
+    elif call.data == fn('email'):
+        await call.message.edit_text(replies.profile_edit_email(user_data['email']))
+        await state.set_state(UserEditProfile.email)
+    elif call.data == fn('phone'):
+        await call.message.edit_text(replies.profile_edit_phone(user_data['phone']))
+        await state.set_state(UserEditProfile.phone)
+    elif call.data == fn('skills'):
+        await edit_profile_skills(call, state, manual_run=True)
+    else:
+        await bot.send_message(call.from_user.id, f"Field is not editable yet: {call.data}")
+
+
+@dp.callback_query_handler(lambda c: c.data == 'profile:edit:done')
+async def edit_profile_done(call: types.CallbackQuery, state: FSMContext) -> None:
+    """Edit user profile (Original state)."""
+    await state.finish()
+    await call.answer()
+    await call.message.edit_text(replies.profile_info(users.get(call.from_user.id)),
+                                 reply_markup=profile_kbs.inlProfileMenu)
+    await call.message.answer("Восстанавливаю основную клавиатуру...",
+                              reply_markup=build_markup("", layout.get_btns("1"), is_main=True))
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('profile:edit:skill:'))
+@dp.callback_query_handler(state=UserEditProfile.skills)
+async def edit_profile_skills(call: Union[types.CallbackQuery, types.Message],
+                              state: FSMContext,
+                              manual_run: bool = False,
+                              message_to_be_edited: types.Message = None) -> None:
+    """Edit user profile skills (loops)."""
+    if isinstance(call, types.CallbackQuery):
+        await call.answer()
+    """Edit user profile skills"""
+    await state.finish()
+    await state.set_state(UserEditProfile.skills)
+    if not manual_run and call.data == 'profile:edit:skill:done':
+        await call.answer()
+        await call.message.edit_text(replies.profile_info(db.get_user_data(call.from_user.id)),
+                                     reply_markup=get_profile_edit_fields_kb())
+        await state.finish()
+        return
+    if not manual_run:
+        split = call.data.split(':')
+        action = split[3]
+        skill = Skill[split[4]]
+        if action == 'add':
+            db.add_user_skills(call.from_user.id, skill)
+        elif action == 'remove':
+            db.remove_user_skill(call.from_user.id, skill)
+    user_data = db.get_user_data(call.from_user.id)
+    keyboard = get_skill_inl_kb(user_data['skills'])
+    cmessage = call.message if isinstance(call, types.CallbackQuery) else call
+    if not message_to_be_edited:
+        await cmessage.edit_text(replies.profile_edit_skills(), reply_markup=keyboard)
+    else:
+        await message_to_be_edited.edit_text(replies.profile_edit_skills(), reply_markup=keyboard)
+
+
+@dp.message_handler(state=UserEditProfile.first_name)
+async def edit_profile_first_name(message: types.Message, state: FSMContext):
+    """Edit user profile first name."""
+    profile_call = (await state.get_data())['profile_call']
+    await state.update_data(first_name=message.text)
+    db.set_user_first_name(message.from_user.id, message.text)
+    await profile_call.message.edit_text(replies.profile_info(db.get_user_data(profile_call.from_user.id)),
+                                         reply_markup=get_profile_edit_fields_kb())
+    await message.delete()
+    await state.finish()
+
+
+@dp.message_handler(state=UserEditProfile.last_name)
+async def edit_profile_last_name(message: types.Message, state: FSMContext):
+    """Edit user profile last name."""
+    profile_call = (await state.get_data())['profile_call']
+    await state.update_data(last_name=message.text)
+    db.set_user_last_name(message.from_user.id, message.text)
+    await profile_call.message.edit_text(replies.profile_info(db.get_user_data(profile_call.from_user.id)),
+                                         reply_markup=get_profile_edit_fields_kb())
+    await message.delete()
+    await state.finish()
+
+
+@dp.message_handler(state=UserEditProfile.birthday)
+async def edit_profile_birthday(message: types.Message, state: FSMContext):
+    """Edit user profile date of birth."""
+    profile_call = (await state.get_data())['profile_call']
+    try:
+        birthday = datetime.strptime(message.text, "%d.%m.%Y")
+    except ValueError:
+        await message.delete()
+        try:
+            await profile_call.message.edit_text(replies.invalid_date_try_again())
+        except MessageNotModified:
+            pass
+        return
+    await state.update_data(birthday=birthday)
+    db.set_user_birthday(message.from_user.id, birthday)
+    await profile_call.message.edit_text(replies.profile_info(db.get_user_data(profile_call.from_user.id)),
+                                         reply_markup=get_profile_edit_fields_kb())
+    await message.delete()
+    await state.finish()
+
+
+@dp.message_handler(state=UserEditProfile.email)
+async def edit_profile_email(message: types.Message, state: FSMContext):
+    """Edit user profile email."""
+    profile_call = (await state.get_data())['profile_call']
+    try:
+        db.set_user_email(message.from_user.id, message.text)
+    except ValueError:
+        await message.delete()
+        try:
+            await profile_call.message.edit_text(replies.invalid_email_try_again())
+        except MessageNotModified:
+            pass
+        return
+    await profile_call.message.edit_text(replies.profile_info(db.get_user_data(profile_call.from_user.id)),
+                                         reply_markup=get_profile_edit_fields_kb())
+    await message.delete()
+    await state.finish()
+
+
+@dp.message_handler(state=UserEditProfile.phone)
+async def edit_profile_phone(message: types.Message, state: FSMContext):
+    """Edit user profile phone."""
+    profile_call = (await state.get_data())['profile_call']
+    try:
+        db.set_user_phone(message.from_user.id, message.text)
+    except ValueError:
+        await message.delete()
+        try:
+            await profile_call.message.edit_text(replies.invalid_phone_try_again())
+        except MessageNotModified:
+            pass
+        return
+    await profile_call.message.edit_text(replies.profile_info(db.get_user_data(profile_call.from_user.id)),
+                                         reply_markup=get_profile_edit_fields_kb())
+    await message.delete()
+    await state.finish()
 
 
 @dp.message_handler()
 async def handler(message: types.Message) -> None:
-    if not db.user_exists(message.from_user.id):
-        await message.answer("Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start")
+    if not users.user_exists(message.from_user.id):
+        await message.answer(replies.not_registered(message.from_user.first_name))
         return
-    buttons: Union[Dict[str, str], None] = shit.get_btns("1")
+    buttons: Union[Dict[str, str], None] = layout.get_btns("1")
 
     if not buttons:
         return
@@ -179,8 +386,8 @@ async def handler(message: types.Message) -> None:
     if btn_id is None:
         return
 
-    reply_msg: Union[str, None] = shit.get_reply(btn_id)
-    keyboard_btn: Union[Dict[str, str], None] = shit.get_btns(btn_id)
+    reply_msg: Union[str, None] = layout.get_reply(btn_id)
+    keyboard_btn: Union[Dict[str, str], None] = layout.get_btns(btn_id)
     keyboard = build_markup(current_path=btn_id, buttons=keyboard_btn)
 
     if keyboard is not None:
@@ -188,7 +395,7 @@ async def handler(message: types.Message) -> None:
     else:
         await message.answer(reply_msg)
 
-    db.insert_button_press(message.from_user.id, btn_id)
+    stats.store(message.from_user.id, btn_id)
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith("back:"))
@@ -197,8 +404,8 @@ async def query_back(call: types.CallbackQuery):
     current_path.pop()
     last_btn = current_path[-1]
     current_path = ":".join(current_path[1:])
-    msg_repl: Union[str, None] = shit.get_reply(last_btn)
-    keyboard_btn: Union[Dict[str, str], None] = shit.get_btns(last_btn)
+    msg_repl: Union[str, None] = layout.get_reply(last_btn)
+    keyboard_btn: Union[Dict[str, str], None] = layout.get_btns(last_btn)
     keyboard = build_markup(current_path, keyboard_btn)
 
     if keyboard is None:
@@ -216,16 +423,16 @@ async def query_back(call: types.CallbackQuery):
 @dp.callback_query_handler()
 async def query_handler(call: types.CallbackQuery):
     await call.answer()
-    if not db.user_exists(call.from_user.id):
+    if not users.user_exists(call.from_user.id):
         await call.message.answer("Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start")
         return
     current_path = call.data
     btn_id = current_path.split(":")[-1]
-    keyboard_btn = shit.get_btns(btn_id)
+    keyboard_btn = layout.get_btns(btn_id)
     keyboard = build_markup(current_path, keyboard_btn)
-    msg_repl = shit.get_reply(btn_id) or ""
+    msg_repl = layout.get_reply(btn_id) or ""
 
-    db.insert_button_press(call.from_user.id, btn_id)
+    stats.store(call.from_user.id, btn_id)
 
     lat_lon = re.findall(r"\d+\.\d+", msg_repl)
     if lat_lon and len(lat_lon) == 2 and "lat" in msg_repl:
@@ -249,8 +456,7 @@ async def query_handler(call: types.CallbackQuery):
 
 async def send_stat():
     while True:
-        data = db.get_statistics()
-        shit.send_stats(data)
+        stats.send()
         await asyncio.sleep(30)  # TODO: Increase after testing
 
 
@@ -260,5 +466,4 @@ async def on_startup(_):
 
 if __name__ == "__main__":
     from aiogram import executor
-
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)

@@ -11,7 +11,7 @@ import re
 
 # region local imports
 from app import config
-from app.utils.shit import Shit
+from app.utils.bot_buttons import Layout
 from app.keyboards import reply_keyboards
 from app.utils.db import DBManager
 
@@ -22,7 +22,7 @@ GROUP_ID = config.vk_group_id
 GROUP_TOKEN = config.vk_token
 API_VERSION = "5.120"
 db = DBManager()
-shit = Shit()
+shit = Layout()
 
 global counter
 

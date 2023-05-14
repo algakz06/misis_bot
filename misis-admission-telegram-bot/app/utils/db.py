@@ -108,5 +108,4 @@ class DBManager:
 
     def user_exists(self, uid: int) -> bool:
         return self.session.query(BotUser.user_id == uid).first() is not None
-
     # endregion

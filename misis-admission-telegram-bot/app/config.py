@@ -13,6 +13,10 @@ POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', '')
 POSTGRES_DB = os.getenv('POSTGRES_DB', '')
 SECRET_KEY = os.getenv('SECRET_KEY', '')
 
+DEFAULT_BASE_URL: str = 'https://misis-admission.seizure.icu'
+PROFILE_BTN: str = 'Профиль'
+EDIT_PROFILE_BTN: str = 'Редактировать'
+
 # region Logging
 # Create a logger instance
 log = logging.getLogger('main.py-aiogram')
