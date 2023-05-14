@@ -71,7 +71,7 @@ class BotUsers:
             "platform": "tg",
             "city": city,
             "email": email,
-            "phone": phone,
+            "phone_number": phone,
         }
         # Add user to local cache
         self.users[user_id] = body
