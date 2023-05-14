@@ -47,7 +47,12 @@ is_admin = (
 
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    await message.reply("""
+    """Start handler."""
+    if users.user_exists(message.from_user.id):
+        await message.answer("Привет! Кажется, мы уже знакомы. Чем могу помочь?",
+                             reply_markup=build_markup("", layout.get_btns("1"), is_main=True))
+        return
+    await message.answer("""
 Привет!\n
 Это телеграмм-бот НИТУ МИСИС,\
 здесь ты сможешь получить ответ на все свои вопросы\n
