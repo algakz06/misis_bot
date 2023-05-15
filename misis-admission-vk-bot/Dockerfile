@@ -1,18 +1,20 @@
 FROM python:3.11-slim
 
-RUN apt-get update \
-    && apt-get install -y curl gcc \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100 \
+    POETRY_VERSION=1.0.0
 
-WORKDIR /app
+RUN pip install "poetry==1.3.2"
 
-RUN mkdir -p ./logs
-
-COPY ./requirements.txt .
-
-RUN pip install -r requirements.txt
+WORKDIR backend
 
 COPY . .
 
-CMD ["python3", "-m", "app"]
+RUN poetry config virtualenvs.create false \
+    && poetry install --only main --no-interaction --no-ansi
+
+CMD ["python3", "-m", "misis_admission_vk_bot/app"]
