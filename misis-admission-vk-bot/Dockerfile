@@ -16,6 +16,7 @@ ENV PATH="${PATH}:${POETRY_VENV}/bin"
 
 WORKDIR /misis_admission_vk_bot
 
+RUN mkdir -p ./logs
 # Install dependencies
 COPY poetry.lock pyproject.toml ./
 RUN poetry install

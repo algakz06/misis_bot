@@ -30,7 +30,7 @@ ch.setFormatter(formatter)
 log.addHandler(ch)
 
 # Create file logging handler and set its level
-fh = logging.FileHandler(r"logs/telegram_bot.log")
+fh = logging.FileHandler(r"logs/vk_bot.log")
 fh.setFormatter(formatter)
 log.addHandler(fh)
 
