@@ -1,20 +1,25 @@
-FROM python:3.11-slim
+FROM python:3.11
 
-ENV PYTHONFAULTHANDLER=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONHASHSEED=random \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_VERSION=1.0.0
+# Configure Poetry
+ENV POETRY_VERSION=1.4.2
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_VENV=/opt/poetry-venv
+ENV POETRY_CACHE_DIR=/opt/.cache
 
-RUN pip install "poetry==1.3.2"
+# Install poetry separated from system interpreter
+RUN python3 -m venv $POETRY_VENV \
+    && $POETRY_VENV/bin/pip install -U pip setuptools \
+    && $POETRY_VENV/bin/pip install poetry==${POETRY_VERSION}
 
-WORKDIR backend
+# Add `poetry` to PATH
+ENV PATH="${PATH}:${POETRY_VENV}/bin"
 
+WORKDIR /misis_admission_vk_bot
+
+# Install dependencies
+COPY poetry.lock pyproject.toml ./
+RUN poetry install
+
+# Run your app
 COPY . .
-
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-interaction --no-ansi
-
-CMD ["python3", "-m", "misis_admission_vk_bot/app"]
+CMD [ "poetry", "run", "python", "-m", "app" ]
