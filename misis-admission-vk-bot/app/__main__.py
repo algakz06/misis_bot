@@ -60,7 +60,7 @@ async def start(message: Message):
 
 @bot.on.message(state=User.FIRST_NAME)
 async def get_first_name(message: Message):
-    if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
+    if not re.match("^([А-ЯЁ][а-яё]*)$", message.text):
         await message.answer('Неверный формат, напиши свое имя, например "Даниил"')
         return
     await message.answer("Записал!\n\nТеперь отправь свою фамилию")
@@ -70,7 +70,7 @@ async def get_first_name(message: Message):
 
 @bot.on.message(state=User.LAST_NAME)
 async def get_last_name(message: Message):
-    if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
+    if not re.match("^([А-ЯЁ][а-яё]*)$", message.text):
         await message.answer(
             'Неверный формат, напиши свою фамилию, например "Коротков"'
         )
