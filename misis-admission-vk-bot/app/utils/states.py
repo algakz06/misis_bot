@@ -15,3 +15,7 @@ class UserEditProfile(BaseStateGroup):
     CITY = "city"
     EMAIL = "email"
     PHONE = "phone"
+
+
+class AddAdmin(BaseStateGroup):
+    ADD_ADMIN = "add_admin"
