@@ -16,7 +16,7 @@ class BotUsers:
 
         def fetch(self):
             """Fetches admins from backend."""
-            self.admins = requests.get(f'{self.base_url}/admins/tg').json()
+            self.admins = [int(i) for i in requests.get(f'{self.base_url}/admins/tg').json()]
 
         def add(self, user_id: int, token) -> bool:
             """Add admin to backend."""
@@ -81,6 +81,38 @@ class BotUsers:
         )
 
         log.info(f"BotUser.add(): {r.status_code}, data: {body}")
+
+    def update(self, user_id: int, first_name: str = None, last_name: str = None, city: str = None, email: str = None, phone: str = None):
+        """Update user info."""
+        body = self.users[user_id]
+        if first_name:
+            body["first_name"] = first_name
+        if last_name:
+            body["last_name"] = last_name
+        if city:
+            body["city"] = city
+        if email:
+            body["email"] = email
+        if phone:
+            body["phone_number"] = phone
+        body["platform"] = "tg"
+        r = requests.put(
+            f'{self.base_url}/user/update', json=body
+        )
+        log.info(f"BotUser.update(): {r.status_code}, data: {body}")
+        is_updated = True if r.json()["status"] == 0 else False
+        if is_updated:
+            if first_name:
+                self.users["first_name"] = first_name
+            if last_name:
+                self.users["last_name"] = last_name
+            if city:
+                self.users["city"] = city
+            if email:
+                self.users["email"] = email
+            if phone:
+                self.users["phone_number"] = phone
+        return is_updated
 
     def get(self, user_id: int) -> dict:
         """Get user by id."""

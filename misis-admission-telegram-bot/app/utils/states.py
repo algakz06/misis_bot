@@ -12,7 +12,6 @@ class User(StatesGroup):
 class UserEditProfile(StatesGroup):
     first_name = State()
     last_name = State()
-    birthday = State()
+    city = State()
     email = State()
     phone = State()
-    skills = State()
