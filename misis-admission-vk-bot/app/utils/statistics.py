@@ -30,3 +30,6 @@ class Statistics:
                 "timestamp": int(datetime.now().timestamp()),
             }
         )
+
+        if len(self.storage) >= 20:
+            self.send()

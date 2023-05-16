@@ -16,13 +16,13 @@ class BotUsers:
 
         def fetch(self):
             """Fetches admins from backend."""
-            self.admins = requests.get(f"{self.base_url}/admins/tg").json()
+            self.admins = [int(i) for i in requests.get(f'{self.base_url}/admins/vk').json()]
 
         def add(self, user_id: int, token) -> bool:
             """Add admin to backend."""
             r = requests.post(
                 f"{self.base_url}/admin/enroll",
-                json={"user_id": user_id, "platform": "tg", "token": token},
+                json={"user_id": user_id, "platform": "vk", "token": token},
             )
             result = True if r.json()["status"] == 0 else False
             if result:
@@ -66,7 +66,7 @@ class BotUsers:
         """Fetch users from backend."""
         self.users = {
             int(k): v
-            for k, v in requests.get(f"{self.base_url}/users/all/tg").json().items()
+            for k, v in requests.get(f"{self.base_url}/users/all/vk").json().items()
         }
 
     def add(
@@ -96,6 +96,20 @@ class BotUsers:
 
         log.info(f"BotUser.add(): {r.status_code}, data: {body}")
 
+    def add_params(self, user_id: str, param: str, value: str) -> None:
+        data = {
+            "user_id": user_id,
+            "platform": "vk",
+            param: value,
+        }
+        log.info(f'user_id={user_id}')
+        user = self.users.get(user_id, {})
+        user[param] = value
+        self.users[user_id] = user
+        r = requests.put(f"{self.base_url}/user/update/partial", json=data)
+        print(r.text)
+        log.info(f"BotUser.add_params(): {r.status_code}, data: {data}")
+
     def get(self, user_id: int) -> dict:
         """Get user by id."""
         return self.users.get(user_id, {}) or {}
@@ -106,4 +120,4 @@ class BotUsers:
 
     def user_exists(self, user_id: int) -> bool:
         """Check if user exists."""
-        return user_id in self.users
+        return user_id in self.users.keys()
