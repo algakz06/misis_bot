@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "misis-admission-vk-bot"
+version = "0.1.0"
+description = ""
+authors = ["algakz06 <77662392+algakz06@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "misis_admission_vk_bot"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+vkbottle = "^4.3.12"
+requests = "^2.30.0"
+python-dotenv = "^1.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
