@@ -32,8 +32,8 @@ from app.utils import replies
 # region app initialization
 bot = Bot(config.tg_token)
 dp = Dispatcher(bot, storage=MemoryStorage())
+users = BotUsers()  # Connection check here
 layout = Layout()
-users = BotUsers()
 stats = Statistics()
 # db = DBManager()
 # endregion
@@ -83,20 +83,7 @@ async def get_last_name(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["last_name"] = message.text
-    await message.answer("Окей, двигаемся дальше\n\nОтправь свой город (например, Москва)",
-                         reply_markup=ReplyKeyboardRemove())
-    await User.city.set()
-
-
-@dp.message_handler(state=User.city)
-async def get_city(message: types.Message, state: FSMContext):
-    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/city?city={message.text}").json()["is_valid"]:
-        await message.answer('Неверный формат!',
-                             reply_markup=ReplyKeyboardRemove())
-        return
-    async with state.proxy() as data:
-        data["city"] = message.text
-    await message.answer("Почти закончили! Напиши свой email",
+    await message.answer("И последний шаг!\n\nОтправь свою почту, например 0xb1b1.algakz06@gmail.com",
                          reply_markup=ReplyKeyboardRemove())
     await User.email.set()
 
@@ -109,20 +96,8 @@ async def get_email(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["email"] = message.text
-    await message.answer("Последний шаг — твой номер телефона! Отправь его в формате 79999999999",
-                         reply_markup=ReplyKeyboardRemove())
-    await User.phone.set()
-
-
-@dp.message_handler(state=User.phone)
-async def get_phone_welcome(message: types.Message, state: FSMContext):
-    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/phone_number?phone={message.text}").json()["is_valid"]:
-        await message.answer('Неверный формат! Пример: "79999999999"',
-                             reply_markup=ReplyKeyboardRemove())
-        return
-    async with state.proxy() as data:
-        data["phone"] = message.text
-    await message.answer("Спасибо за регистрацию и добро пожаловать!",
+    await message.answer("Спасибо за регистрацию и добро пожаловать!\n\nВы можете оставить дополнительную информацию о \
+себе в пункте меню \"Профиль\"",
                          reply_markup=ReplyKeyboardRemove())
     buttons = layout.get_btns("1")
     reply_msg = layout.get_reply("0")
@@ -132,12 +107,10 @@ async def get_phone_welcome(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         users.add(
             message.from_user.id,
-            message.from_user.username,
-            data["first_name"],
-            data["last_name"],
-            data["city"],
-            data["email"],
-            data["phone"],
+            username=message.from_user.username,
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            email=data["email"]
         )
     await state.finish()
 
@@ -159,14 +132,31 @@ async def resend_keyboard(message: types.Message):
         await message.answer("Вы не администратор!")
         return
 
-    buttons = layout.get_btns("1")
-    for user_id in users.get_ids():
-        log.debug(f"Resending keyboard to {user_id}")
-        await bot.send_message(
-            chat_id=user_id,
-            text="Клавиатура обновилась",
-            reply_markup=build_markup("", buttons, True)
-        )
+    args = message.get_args().split()
+    log.debug(f"Arguments for /reload: {args}")
+
+    if "kb" in args:
+        log.debug("Resending keyboard to all users")
+        buttons = layout.get_btns("1")
+        for user_id in users.get_ids():
+            log.debug(f"Resending keyboard to {user_id}")
+            await bot.send_message(
+                chat_id=user_id,
+                text="Клавиатура обновилась",
+                reply_markup=build_markup("", buttons, True)
+            )
+    if "replies" in args:
+        log.debug("Asking the backend to reload all replies")
+        requests.get(f"{config.DEFAULT_BASE_URL}/reload/replies")
+        await bot.send_message(message.from_user.id,
+                               "Ответы перезагружены")
+    if "users" in args:
+        log.debug("Asking the backend to reload all users")
+        requests.get(f"{config.DEFAULT_BASE_URL}/reload/users")
+        users.fetch()
+        users.admins.fetch()
+        await bot.send_message(message.from_user.id,
+                               "Пользователи перезагружены")
 
 
 @dp.message_handler(lambda message: message.text == config.PROFILE_BTN)
