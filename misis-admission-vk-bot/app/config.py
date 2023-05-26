@@ -9,8 +9,9 @@ backend_url = "misis-admission.seizure.icu:80"
 
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 
-DEFAULT_BASE_URL: str = "https://misis-admission.seizure.icu"
-PROFILE_BTN: str = "Профиль"
+DEFAULT_BASE_URL: str = os.getenv('DEFAULT_BASE_URL', '')
+FILE_BTN: str = "Профиль"
+
 EDIT_PROFILE_BTN: str = "Редактировать"
 
 # region Logging

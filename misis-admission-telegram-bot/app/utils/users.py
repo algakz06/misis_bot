@@ -10,7 +10,7 @@ from app.config import DEFAULT_BASE_URL
 
 class BotUsers:
     class Admins:
-        def __init__(self, base_url: str = 'https://misis-admission.seizure.icu'):
+        def __init__(self, base_url: str = DEFAULT_BASE_URL):
             self.base_url: str = base_url
             self.admins: List[int] = []
 

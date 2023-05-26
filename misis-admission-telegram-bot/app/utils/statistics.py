@@ -16,7 +16,7 @@ class Statistics:
     def send(self):
         """Send all stored statistics to backend."""
         body = {"events": self.storage}
-        r = requests.post("https://misis-admission.seizure.icu/telemetry", json=body)
+        r = requests.post(f"https://{self.base_url}/telemetry", json=body)
         log.debug(f"Statistics.send(): {r.status_code}, data: {body}")
         self.storage = []
 

@@ -12,6 +12,7 @@ POSTGRES_USER = os.getenv("POSTGRES_USER", '')
 POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', '')
 POSTGRES_DB = os.getenv('POSTGRES_DB', '')
 SECRET_KEY = os.getenv('SECRET_KEY', '')
+DEFAULT_BASE_URL = os.getenv('DEFAULT_BASE_URL', '')
 
 DEFAULT_BASE_URL: str = 'https://misis-admission.seizure.icu'
 PROFILE_BTN: str = 'Профиль'

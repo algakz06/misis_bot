@@ -3,12 +3,12 @@
 """User-related utilities."""
 import requests
 from typing import List
-from app.config import log
+from app.config import log, DEFAULT_BASE_URL
 
 
 class BotUsers:
     class Admins:
-        def __init__(self, base_url: str = "https://misis-admission.seizure.icu"):
+        def __init__(self, base_url: str = DEFAULT_BASE_URL):
             self.base_url: str = base_url
             self.admins: List[int] = []
 
