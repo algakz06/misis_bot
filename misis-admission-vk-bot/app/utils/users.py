@@ -55,7 +55,7 @@ class BotUsers:
             """Check if user is admin."""
             return user_id in self.admins
 
-    def __init__(self, base_url: str = "https://misis-admission.seizure.icu"):
+    def __init__(self, base_url: str = "backend"):
         self.base_url: str = base_url
         self.users: dict = {}
         self.admins = BotUsers.Admins(base_url=base_url)

@@ -2,7 +2,7 @@ import requests
 from typing import List, Dict, Union, Optional
 import json
 
-from app.config import log
+from app.config import log, DEFAULT_BASE_URL
 
 
 class Layout:
@@ -10,7 +10,7 @@ class Layout:
         self.buttons: Dict[str, str] = {}
 
     def get_all_buttons(self) -> Union[Dict[str, str], None]:
-        r = requests.get("https://misis-admission.seizure.icu/all/btns")
+        r = requests.get(f"{DEFAULT_BASE_URL}/all/btns")
         try:
             data = r.json()
         except json.JSONDecodeError:
@@ -22,7 +22,7 @@ class Layout:
 
     @staticmethod
     def get_reply(id: str) -> Union[str, None]:
-        r = requests.get(f"https://misis-admission.seizure.icu/repls/{id}")
+        r = requests.get(f"{DEFAULT_BASE_URL}/repls/{id}")
         r = r.json()
         try:
             reply = r[0].get("text", None)
@@ -33,7 +33,7 @@ class Layout:
 
     @staticmethod
     def get_btns(id: str) -> Union[Dict[str, str], None]:
-        r = requests.get(f"https://misis-admission.seizure.icu/btns/{id}")
+        r = requests.get(f"{DEFAULT_BASE_URL}/btns/{id}")
         r = r.json()
         buttons: Dict[str, str] = {}
         try:
@@ -50,7 +50,7 @@ class Layout:
     # def send_stats(data: List[Dict[str, Union[str, int]]]) -> None:
     #     body = {"events": data}
     #
-    #     r = requests.post("https://misis-admission.seizure.icu/telemetry", json=body)
+    #     r = requests.post(f"{DEFAULT_BASE_URL}/telemetry", json=body)
     #
     #     log.info(f"send_stats: {r.status_code}, data: {data}")
 
@@ -71,7 +71,7 @@ class Layout:
     #     }
     #
     #     r = requests.post(
-    #         "https://misis-admission.seizure.icu/user/register", json=body
+    #         f"{DEFAULT_BASE_URL}/user/register", json=body
     #     )
     #
     #     log.info(f"send_bot_user: {r.status_code}, data: {body}")
