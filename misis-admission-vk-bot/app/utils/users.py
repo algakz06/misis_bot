@@ -16,12 +16,12 @@ class BotUsers:
 
         def fetch(self):
             """Fetches admins from backend."""
-            self.admins = [int(i) for i in requests.get(f'{self.base_url}/admins/vk').json()]
+            self.admins = [int(i) for i in requests.get(f'{DEFAULT_BASE_URL}/admins/vk').json()]
 
         def add(self, user_id: int, token) -> bool:
             """Add admin to backend."""
             r = requests.post(
-                f"{self.base_url}/admin/enroll",
+                f"{DEFAULT_BASE_URL}/admin/enroll",
                 json={"user_id": user_id, "platform": "vk", "token": token},
             )
             result = True if r.json()["status"] == 0 else False
@@ -38,7 +38,7 @@ class BotUsers:
 
         def remove(self, user_id: int) -> bool:
             """Remove admin from backend."""
-            r = requests.delete(f"{self.base_url}/admin/tg/{user_id}")
+            r = requests.delete(f"{DEFAULT_BASE_URL}/admin/tg/{user_id}")
             result = True if r.json().get("status", 0) else False
             if result:
                 log.warning(
@@ -55,7 +55,7 @@ class BotUsers:
             """Check if user is admin."""
             return user_id in self.admins
 
-    def __init__(self, base_url: str = "backend"):
+    def __init__(self, base_url: str = DEFAULT_BASE_URL):
         self.base_url: str = base_url
         self.users: dict = {}
         self.admins = BotUsers.Admins(base_url=base_url)
@@ -66,7 +66,7 @@ class BotUsers:
         """Fetch users from backend."""
         self.users = {
             int(k): v
-            for k, v in requests.get(f"{self.base_url}/users/all/vk").json().items()
+            for k, v in requests.get(f"{DEFAULT_BASE_URL}/users/all/vk").json().items()
         }
 
     def add(
@@ -92,7 +92,7 @@ class BotUsers:
         # Add user to local cache
         self.users[user_id] = body
 
-        r = requests.post(f"{self.base_url}/user/register", json=body)
+        r = requests.post(f"{DEFAULT_BASE_URL}/user/register", json=body)
 
         log.info(f"BotUser.add(): {r.status_code}, data: {body}")
 
@@ -106,7 +106,7 @@ class BotUsers:
         user = self.users.get(user_id, {})
         user[param] = value
         self.users[user_id] = user
-        r = requests.put(f"{self.base_url}/user/update/partial", json=data)
+        r = requests.put(f"{DEFAULT_BASE_URL}/user/update/partial", json=data)
         print(r.text)
         log.info(f"BotUser.add_params(): {r.status_code}, data: {data}")
 

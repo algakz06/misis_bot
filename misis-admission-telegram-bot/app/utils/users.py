@@ -18,12 +18,12 @@ class BotUsers:
 
         def fetch(self):
             """Fetches admins from backend."""
-            self.admins = [int(i) for i in requests.get(f'{self.base_url}/admins/tg').json()]
+            self.admins = [int(i) for i in requests.get(f'{DEFAULT_BASE_URL}/admins/tg').json()]
 
         def add(self, user_id: int, token) -> bool:
             """Add admin to backend."""
             r = requests.post(
-                f'{self.base_url}/admin/enroll', json={"user_id": user_id, "platform": "tg", "token": token}
+                f'{DEFAULT_BASE_URL}/admin/enroll', json={"user_id": user_id, "platform": "tg", "token": token}
             )
             result = True if r.json()["status"] == 0 else False
             if result:
@@ -36,7 +36,7 @@ class BotUsers:
         def remove(self, user_id: int) -> bool:
             """Remove admin from backend."""
             r = requests.delete(
-                f'{self.base_url}/admin/tg/{user_id}'
+                f'{DEFAULT_BASE_URL}/admin/tg/{user_id}'
             )
             result = True if r.json().get("status", 0) else False
             if result:
@@ -63,7 +63,7 @@ class BotUsers:
         counter = 0
         while not connected and counter < 7:
             counter += 1
-            r = requests.get(f'{self.base_url}/ping')
+            r = requests.get(f'{DEFAULT_BASE_URL}/ping')
             try:
                 j = r.json()
                 decoded = True
@@ -84,7 +84,7 @@ class BotUsers:
 
     def fetch(self):
         """Fetch users from backend."""
-        self.users = {int(k): v for k, v in requests.get(f'{self.base_url}/users/all/tg').json().items()}
+        self.users = {int(k): v for k, v in requests.get(f'{DEFAULT_BASE_URL}/users/all/tg').json().items()}
 
     def add(
         self, user_id: str, username: str = None, first_name: str = None,
@@ -104,12 +104,13 @@ class BotUsers:
         self.users[user_id] = body
 
         r = requests.post(
-            f'{self.base_url}/user/register', json=body
+            f'{DEFAULT_BASE_URL}/user/register', json=body
         )
 
         log.info(f"BotUser.add(): {r.status_code}, data: {body}")
 
-    def update(self, user_id: int, first_name: str = None, last_name: str = None, city: str = None, email: str = None, phone: str = None):
+    def update(self, user_id: int, first_name: str = None, last_name: str = None,
+               city: str = None, email: str = None, phone: str = None):
         """Update user info."""
         body = self.users[user_id]
         if first_name:
@@ -124,7 +125,7 @@ class BotUsers:
             body["phone_number"] = phone
         body["platform"] = "tg"
         r = requests.put(
-            f'{self.base_url}/user/update', json=body
+            f'{DEFAULT_BASE_URL}/user/update', json=body
         )
         log.info(f"BotUser.update(): {r.status_code}, data: {body}")
         is_updated = True if r.json()["status"] == 0 else False
