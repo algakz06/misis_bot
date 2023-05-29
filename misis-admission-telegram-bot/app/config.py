@@ -1,20 +1,18 @@
-import os
+from os import getenv
 from dotenv import load_dotenv
 import logging
 
 load_dotenv()
 
-tg_token = os.getenv("TG_TOKEN")
-backend_url = 'misis-admission.seizure.icu:80'
+tg_token = getenv("TG_TOKEN")
 
-POSTGRES_HOST = os.getenv('POSTGRES_HOST', '')
-POSTGRES_USER = os.getenv("POSTGRES_USER", '')
-POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', '')
-POSTGRES_DB = os.getenv('POSTGRES_DB', '')
-SECRET_KEY = os.getenv('SECRET_KEY', '')
-DEFAULT_BASE_URL = os.getenv('DEFAULT_BASE_URL', '')
+POSTGRES_HOST = getenv('POSTGRES_HOST', '')
+POSTGRES_USER = getenv("POSTGRES_USER", '')
+POSTGRES_PASSWORD = getenv('POSTGRES_PASSWORD', '')
+POSTGRES_DB = getenv('POSTGRES_DB', '')
+SECRET_KEY = getenv('SECRET_KEY', '')
+DEFAULT_BASE_URL = getenv('DEFAULT_BASE_URL', '')
 
-DEFAULT_BASE_URL: str = 'https://misis-admission.seizure.icu'
 PROFILE_BTN: str = 'Профиль'
 EDIT_PROFILE_BTN: str = 'Редактировать'
 
@@ -28,7 +26,7 @@ log = logging.getLogger('main.py-aiogram')
 # Create log formatter
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# Сreate console logging handler and set its level
+# Create console logging handler and set its level
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
@@ -40,7 +38,7 @@ fh.setFormatter(formatter)
 log.addHandler(fh)
 
 # region Set logging level
-logging_level_lower = os.getenv('LOGGING_LEVEL').lower()
+logging_level_lower = getenv('LOGGING_LEVEL').lower()
 if logging_level_lower == 'debug':
     log.setLevel(logging.DEBUG)
     log.critical("Log level set to debug")
@@ -57,4 +55,4 @@ elif logging_level_lower == 'critical':
     log.setLevel(logging.CRITICAL)
     log.critical("Log level set to critical")
 # endregion
-#endregion
+# endregion

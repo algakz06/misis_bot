@@ -5,7 +5,6 @@ import logging
 load_dotenv()
 
 vk_token = os.getenv("VK_TOKEN")
-backend_url = "misis-admission.seizure.icu:80"
 
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 
@@ -16,7 +15,7 @@ EDIT_PROFILE_BTN: str = "Редактировать"
 
 # region Logging
 # Create a logger instance
-log = logging.getLogger("main.py-aiogram")
+log = logging.getLogger("main.py-vkbottle")
 
 # AIOGram logging
 # logging.basicConfig(level=logging.DEBUG)
