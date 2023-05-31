@@ -11,7 +11,7 @@ import re
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.exceptions import MessageNotModified
+from aiogram.utils.exceptions import MessageNotModified, BotBlocked
 # endregion
 
 # region local imports
@@ -139,12 +139,15 @@ async def resend_keyboard(message: types.Message):
         log.debug("Resending keyboard to all users")
         buttons = layout.get_btns("1")
         for user_id in users.get_ids():
-            log.debug(f"Resending keyboard to {user_id}")
-            await bot.send_message(
-                chat_id=user_id,
-                text="Клавиатура обновилась",
-                reply_markup=build_markup("", buttons, True)
-            )
+            try:
+                log.debug(f"Resending keyboard to {user_id}")
+                await bot.send_message(
+                    chat_id=user_id,
+                    text="Клавиатура обновилась",
+                    reply_markup=build_markup("", buttons, True)
+                )
+            except BotBlocked:
+                log.debug(f"User {user_id} blocked the bot")
     if "replies" in args:
         log.debug("Asking the backend to reload all replies")
         requests.get(f"{config.DEFAULT_BASE_URL}/reload/replies")
