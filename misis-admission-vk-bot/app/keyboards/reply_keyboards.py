@@ -1,7 +1,7 @@
 from vkbottle import Keyboard, KeyboardButtonColor, Text, Callback
 
 from app.config import log
-import .buttons as btns
+from . import buttons as btns
 
 from typing import Optional, Union, Dict, List, Tuple
 
