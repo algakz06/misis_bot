@@ -1,6 +1,7 @@
 from vkbottle import Keyboard, KeyboardButtonColor, Text, Callback
 
 from app.config import log
+import .buttons as btns
 
 from typing import Optional, Union, Dict, List, Tuple
 
@@ -9,12 +10,12 @@ def build_markup(
     current_path: str, buttons: Optional[Dict[str, str]], is_main: bool = False
 ) -> Union[Keyboard, None]:
     if is_main:
-        return reply_markup(buttons=buttons)
+        return reply_markup(buttons=buttons, is_main=True)
     else:
         return inline_markup(current_path=current_path, buttons=buttons)
 
 
-def reply_markup(buttons: Optional[Dict[str, str]] = None) -> Union[Keyboard, None]:
+def reply_markup(buttons: Optional[Dict[str, str]] = None, is_main: bool = False) -> Union[Keyboard, None]:
     if buttons is None:
         return None
 
@@ -30,6 +31,8 @@ def reply_markup(buttons: Optional[Dict[str, str]] = None) -> Union[Keyboard, No
             keyboard.row()
             keyboard.add(Text(button), color=KeyboardButtonColor.POSITIVE)
             counter = 1
+    if is_main:
+        keyboard.add(Text(btns.PROFILE_BTN), color=KeyboardButtonColor.POSITIVE)
 
     return keyboard.get_json()
 

@@ -17,6 +17,8 @@ from app.keyboards.reply_keyboards import build_markup, reply_markup
 from app.utils.users import BotUsers
 from app.utils.statistics import Statistics
 from app.utils.states import User, UserEditProfile, AddAdmin
+from app.keyboards import PROFILE_BTN
+from app import replies
 
 # endregion
 
@@ -33,7 +35,7 @@ counter = 0
 
 
 # виды callback-кнопок
-@bot.on.message(text=["начать", "start", "Start", "Начать"])
+@bot.on.message(text=["начать", "start", "Start", "Начать", "/start"])
 async def start(message: Message):
     """Start handler."""
     user_exists = bot_users.user_exists(message.from_id)
@@ -119,6 +121,17 @@ async def get_phone(message: Message):
     await message.answer(reply_msg, keyboard=build_markup("", buttons, is_main=True))
     bot_users.add_params(message.from_id, "phone_number", message.text)
     await bot.state_dispenser.delete(message.peer_id)
+
+
+@bot.on.message(text=PROFILE_BTN)
+async def profile(message: Message):
+    if not bot_users.user_exists(message.from_id):
+        await message.answer("Вы не зарегистрированы!")
+        return
+    await message.answer(
+        replies.profile_info(bot_users.get(message.from_id)),
+        keyboard=None,
+    )
 
 
 @bot.on.message(text="/elevate")
