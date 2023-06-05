@@ -17,7 +17,7 @@ from app.keyboards.reply_keyboards import build_markup, reply_markup
 from app.utils.users import BotUsers
 from app.utils.statistics import Statistics
 from app.utils.states import User, UserEditProfile, AddAdmin
-from app.keyboards import PROFILE_BTN
+from app.keyboards.buttons import PROFILE_BTN
 from app import replies
 
 # endregion
