@@ -158,13 +158,13 @@ async def reload(message: Message):
         await message.answer("Вы не администратор!")
         return
     users = bot_users.get_ids()
-    keyabord = build_markup("", layout.get_btns("1"), is_main=True)
+    keyboard = build_markup("", layout.get_btns("1"), is_main=True)
     for user in users:
         await bot.api.messages.send(
             user_id=user,
             random_id=random.randint(-2147483648, 2147483647),
             message="Привет! Клавиатура обновилась",
-            keyabord=keyabord,
+            keyboard=keyboard,
         )
 
 
