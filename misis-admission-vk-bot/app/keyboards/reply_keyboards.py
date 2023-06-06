@@ -15,15 +15,18 @@ def build_markup(
         return inline_markup(current_path=current_path, buttons=buttons)
 
 
-def reply_markup(buttons: Optional[Dict[str, str]] = None, is_main: bool = False) -> Union[Keyboard, None]:
+def reply_markup(
+    buttons: Optional[Dict[str, str]] = None, is_main: bool = False
+) -> Union[Keyboard, None]:
     if buttons is None:
         return None
 
     buttons = list(buttons.values())
     keyboard = Keyboard(one_time=False, inline=False)
     counter = 0
-    button_color = KeyboardButtonColor.PRIMARY if is_main \
-        else KeyboardButtonColor.POSITIVE
+    button_color = (
+        KeyboardButtonColor.PRIMARY if is_main else KeyboardButtonColor.POSITIVE
+    )
 
     for button in buttons:
         if counter >= 2:
@@ -33,8 +36,7 @@ def reply_markup(buttons: Optional[Dict[str, str]] = None, is_main: bool = False
 
     if is_main:
         keyboard.row()
-        keyboard.add(Text(btns.PROFILE_BTN),
-                     color=KeyboardButtonColor.POSITIVE)
+        keyboard.add(Text(btns.PROFILE_BTN), color=KeyboardButtonColor.POSITIVE)
 
     return keyboard.get_json()
 
@@ -56,6 +58,11 @@ def inline_markup(
     )
     counter = 0
 
+    flag = False
+
+    if len(buttons) > 7:
+        flag = True
+
     for button_id, button in buttons:
         path = current_path.split(":")
         path.append(button_id)
@@ -64,7 +71,10 @@ def inline_markup(
 
         counter += 1
 
-        if 6 > counter != len(buttons):
+        if flag:
+            if counter % 2 == 0:
+                keyboard.row()
+        elif counter != len(buttons):
             keyboard.row()
 
     if len(current_path.split(":")) > 1:
