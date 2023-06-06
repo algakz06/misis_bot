@@ -22,17 +22,19 @@ def reply_markup(buttons: Optional[Dict[str, str]] = None, is_main: bool = False
     buttons = list(buttons.values())
     keyboard = Keyboard(one_time=False, inline=False)
     counter = 0
+    button_color = KeyboardButtonColor.PRIMARY if is_main \
+        else KeyboardButtonColor.POSITIVE
 
     for button in buttons:
-        if counter < 2:
-            keyboard.add(Text(button), color=KeyboardButtonColor.POSITIVE)
-            counter += 1
-        else:
+        if counter >= 2:
             keyboard.row()
-            keyboard.add(Text(button), color=KeyboardButtonColor.POSITIVE)
-            counter = 1
+        keyboard.add(Text(button), color=button_color)
+        counter = 1
+
     if is_main:
-        keyboard.add(Text(btns.PROFILE_BTN), color=KeyboardButtonColor.POSITIVE)
+        keyboard.row()
+        keyboard.add(Text(btns.PROFILE_BTN),
+                     color=KeyboardButtonColor.POSITIVE)
 
     return keyboard.get_json()
 
