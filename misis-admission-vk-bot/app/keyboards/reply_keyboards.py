@@ -60,7 +60,7 @@ def inline_markup(
 
     flag = False
 
-    if len(buttons) > 7:
+    if len(buttons) > 6:
         flag = True
 
     for button_id, button in buttons:
