@@ -29,7 +29,7 @@ def reply_markup(buttons: Optional[Dict[str, str]] = None, is_main: bool = False
         if counter >= 2:
             keyboard.row()
         keyboard.add(Text(button), color=button_color)
-        counter = 1
+        counter += 1
 
     if is_main:
         keyboard.row()
