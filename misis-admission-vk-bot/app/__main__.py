@@ -181,6 +181,8 @@ async def message_handler(message: Message):
     btn_id = [btn_id for btn_id, text in buttons.items() if text == message.text][0]
 
     reply_msg = layout.get_reply(btn_id)
+    if reply_msg is None:
+        reply_msg = 'Нажмите на интересующую вас кнопку'
     keyboard_btns = layout.get_btns(btn_id)
     keyboard = build_markup(current_path=btn_id, buttons=keyboard_btns)
 
