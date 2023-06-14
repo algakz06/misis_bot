@@ -72,10 +72,12 @@ def inline_markup(
                 keyboard2.add(Callback(button, payload={"path": path}))
                 keyboard2.row()
 
+            counter += 1
+
         if len(current_path.split(":")) > 1:
             keyboard2.add(Callback("Назад", payload={"path": f"back:{current_path}"}))
 
-        return [keyboard1, keyboard2]
+        return [keyboard1.get_json(), keyboard2.get_json()]
 
     keyboard = Keyboard(one_time=False, inline=True)
     log.info(f"current_path={current_path}, buttons={buttons}")
