@@ -60,9 +60,10 @@ def inline_markup(
             path.append(button_id)
             path = ":".join(path)
 
-            if counter < 5:
+            if counter < 6:
                 keyboard1.add(Callback(button, payload={"path": path}))
-                keyboard1.row()
+                if not counter == 5:
+                    keyboard1.row()
             else:
                 keyboard2.add(Callback(button, payload={"path": path}))
                 keyboard2.row()
