@@ -182,11 +182,16 @@ async def message_handler(message: Message):
 
     reply_msg = layout.get_reply(btn_id)
     if reply_msg is None:
-        reply_msg = 'Нажмите на интересующую вас кнопку'
+        reply_msg = "Нажмите на интересующую вас кнопку"
     keyboard_btns = layout.get_btns(btn_id)
     keyboard = build_markup(current_path=btn_id, buttons=keyboard_btns)
 
-    await message.answer(reply_msg, keyboard=keyboard)
+    if isinstance(keyboard, list):
+        await message.answer(reply_msg, keyboard=keyboard[0])
+        await message.answer("Продолжение клавиатуры", keyboard=keyboard[1])
+    else:
+        await message.answer(reply_msg, keyboard=keyboard)
+
     stat.store(
         user_id=message.from_id,
         button_id=btn_id,
@@ -228,19 +233,47 @@ async def callback_handler(event: GroupTypes.MessageEvent):
         return
 
     if reply_msg is None:
-        await bot.api.messages.edit(
-            peer_id=event.object.peer_id,
-            conversation_message_id=event.object.conversation_message_id,
-            keyboard=keyboard,
-            message="Нажми на интересующую тебя кнопку",
-        )
+        if isinstance(keyboard, list):
+            await bot.api.messages.edit(
+                peer_id=event.object.peer_id,
+                conversation_message_id=event.object.conversation_message_id,
+                keyboard=keyboard[0],
+                message="Нажми на интересующую тебя кнопку",
+            )
+            await bot.api.messages.send(
+                peer_id=event.object.peer_id,
+                random_id=random.randint(-2147483648, 2147483647),
+                message="Продолжение клавиатуры",
+                keyboard=keyboard[1],
+            )
+        else:
+            await bot.api.messages.edit(
+                peer_id=event.object.peer_id,
+                conversation_message_id=event.object.conversation_message_id,
+                keyboard=keyboard,
+                message="Нажми на интересующую тебя кнопку",
+            )
     else:
-        await bot.api.messages.edit(
-            peer_id=event.object.peer_id,
-            conversation_message_id=event.object.conversation_message_id,
-            keyboard=keyboard,
-            message=reply_msg,
-        )
+        if isinstance(keyboard, list):
+            await bot.api.messages.edit(
+                peer_id=event.object.peer_id,
+                conversation_message_id=event.object.conversation_message_id,
+                keyboard=keyboard[0],
+                message=reply_msg,
+            )
+            await bot.api.messages.send(
+                peer_id=event.object.peer_id,
+                random_id=random.randint(-2147483648, 2147483647),
+                message="Продолжение клавиатуры",
+                keyboard=keyboard[1],
+            )
+        else:
+            await bot.api.messages.edit(
+                peer_id=event.object.peer_id,
+                conversation_message_id=event.object.conversation_message_id,
+                keyboard=keyboard,
+                message=reply_msg,
+            )
     stat.store(
         user_id=event.object.user_id,
         button_id=btn_id,
