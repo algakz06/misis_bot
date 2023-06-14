@@ -98,7 +98,7 @@ def inline_markup(
         counter += 1
 
         if flag:
-            if counter % 2 == 0:
+            if counter % 2 == 0 and counter != len(buttons):
                 keyboard.row()
         elif counter != len(buttons):
             keyboard.row()
