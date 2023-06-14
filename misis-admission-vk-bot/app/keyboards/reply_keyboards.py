@@ -50,6 +50,10 @@ def inline_markup(
             keyboard.add(Callback("Назад", payload={"path": f"back:{current_path}"}))
         return keyboard.get_json()
 
+    buttons: List[Tuple[str, str]] = sorted(
+        buttons.items(), key=lambda x: len(x[1]), reverse=True
+    )
+
     if len(buttons) > 10:
         keyboard1 = Keyboard(one_time=False, inline=True)
         keyboard2 = Keyboard(one_time=False, inline=True)
@@ -76,9 +80,6 @@ def inline_markup(
     keyboard = Keyboard(one_time=False, inline=True)
     log.info(f"current_path={current_path}, buttons={buttons}")
 
-    buttons: List[Tuple[str, str]] = sorted(
-        buttons.items(), key=lambda x: len(x[1]), reverse=True
-    )
     counter = 0
 
     flag = False
