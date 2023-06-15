@@ -176,7 +176,27 @@ async def message_handler(message: Message):
         return
 
     if message.text not in buttons.values():
-        return
+         user_exists = bot_users.user_exists(message.from_id)
+        if user_exists:
+            await message.answer(
+                "Привет! Кажется, мы уже знакомы. Чем могу помочь?",
+                keyboard=build_markup("", layout.get_btns("1"), is_main=True),
+            )
+            return
+        else:
+            await message.answer(
+            """
+Привет!\n
+Это телеграмм-бот НИТУ МИСИС,\
+здесь ты сможешь получить ответ на все свои вопросы\n
+Только перед этим нам надо получить от тебя немного информации
+"""
+            )
+            await message.answer(
+                "Для начала отправь мне свое имя",
+            )
+            await bot.state_dispenser.set(message.peer_id, User.FIRST_NAME)
+
 
     btn_id = [btn_id for btn_id, text in buttons.items() if text == message.text][0]
 
@@ -185,6 +205,10 @@ async def message_handler(message: Message):
         reply_msg = "Нажмите на интересующую вас кнопку"
     keyboard_btns = layout.get_btns(btn_id)
     keyboard = build_markup(current_path=btn_id, buttons=keyboard_btns)
+
+    if keyboard is None:
+        await message.answer(reply_msg)
+        return
 
     if isinstance(keyboard, list):
         await message.answer(reply_msg, keyboard=keyboard[0])
