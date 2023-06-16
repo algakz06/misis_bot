@@ -210,10 +210,6 @@ async def message_handler(message: Message):
     keyboard_btns = layout.get_btns(btn_id)
     keyboard = build_markup(current_path=btn_id, buttons=keyboard_btns)
 
-    if keyboard is None:
-        await message.reply(reply_msg)
-        return
-
     if isinstance(keyboard, list):
         await message.answer(reply_msg, keyboard=keyboard[0])
         await message.answer("Продолжение клавиатуры", keyboard=keyboard[1])

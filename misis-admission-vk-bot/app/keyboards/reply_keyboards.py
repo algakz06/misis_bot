@@ -48,6 +48,8 @@ def inline_markup(
         keyboard = Keyboard(one_time=False, inline=True)
         if len(current_path.split(":")) > 1:
             keyboard.add(Callback("Назад", payload={"path": f"back:{current_path}"}))
+        else:
+            return None
         return keyboard.get_json()
 
     buttons: List[Tuple[str, str]] = sorted(
