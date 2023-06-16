@@ -33,3 +33,4 @@ class Statistics:
 
         if len(self.storage) >= 20:
             self.send()
+            log.info(f'Statistics stored, storage = {self.storage}')
