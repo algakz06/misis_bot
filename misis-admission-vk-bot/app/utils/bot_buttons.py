@@ -35,6 +35,9 @@ class Layout:
     def get_btns(id: str) -> Union[Dict[str, str], None]:
         r = requests.get(f"{DEFAULT_BASE_URL}/btns/{id}")
         r = r.json()
+
+        if r == {}:
+            return None
         buttons: Dict[str, str] = {}
         try:
             for btn in r:
