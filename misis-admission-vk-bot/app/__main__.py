@@ -176,7 +176,7 @@ async def message_handler(message: Message):
         return
 
     if message.text not in buttons.values():
-         user_exists = bot_users.user_exists(message.from_id)
+        user_exists = bot_users.user_exists(message.from_id)
         if user_exists:
             await message.answer(
                 "Привет! Кажется, мы уже знакомы. Чем могу помочь?",
@@ -185,7 +185,7 @@ async def message_handler(message: Message):
             return
         else:
             await message.answer(
-            """
+                """
 Привет!\n
 Это телеграмм-бот НИТУ МИСИС,\
 здесь ты сможешь получить ответ на все свои вопросы\n
@@ -197,8 +197,12 @@ async def message_handler(message: Message):
             )
             await bot.state_dispenser.set(message.peer_id, User.FIRST_NAME)
 
-
     btn_id = [btn_id for btn_id, text in buttons.items() if text == message.text][0]
+
+    stat.store(
+        user_id=message.from_id,
+        button_id=btn_id,
+    )
 
     reply_msg = layout.get_reply(btn_id)
     if reply_msg is None:
@@ -215,11 +219,6 @@ async def message_handler(message: Message):
         await message.answer("Продолжение клавиатуры", keyboard=keyboard[1])
     else:
         await message.answer(reply_msg, keyboard=keyboard)
-
-    stat.store(
-        user_id=message.from_id,
-        button_id=btn_id,
-    )
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, dataclass=GroupTypes.MessageEvent)
