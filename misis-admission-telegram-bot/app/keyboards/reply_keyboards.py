@@ -1,14 +1,18 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import (
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 from app.config import log
 import app.config as config
 
 from typing import Optional, Union, Dict
 
 
-def build_markup(current_path: str,
-                 buttons: Optional[Dict[str, str]],
-                 is_main: bool = False) -> Union[ReplyKeyboardMarkup,
-                                                 InlineKeyboardMarkup]:
+def build_markup(
+    current_path: str, buttons: Optional[Dict[str, str]], is_main: bool = False
+) -> Union[ReplyKeyboardMarkup, InlineKeyboardMarkup]:
     if is_main:
         markup = reply_markup(buttons=buttons)
         markup.add(KeyboardButton(config.PROFILE_BTN))
@@ -40,20 +44,36 @@ def reply_markup(buttons: Optional[Dict[str, str]] = None) -> ReplyKeyboardMarku
     return ReplyKeyboardMarkup(keyboard=keyboard)
 
 
-def inline_markup(current_path: str, buttons: Optional[Dict[str, str]] = None) -> InlineKeyboardMarkup:
+def inline_markup(
+    current_path: str, buttons: Optional[Dict[str, str]] = None
+) -> InlineKeyboardMarkup:
     if buttons is None:
         return None
 
     keyboard = []
-    log.info(f'current_path={current_path}, buttons={buttons}')
+    log.info(f"current_path={current_path}, buttons={buttons}")
 
     for button_id, button in buttons.items():
-        path = current_path.split(':')
+        path = current_path.split(":")
         path.append(button_id)
-        path = ':'.join(path)
+        path = ":".join(path)
         keyboard.append([InlineKeyboardButton(button, callback_data=path)])
 
-    if len(current_path.split(':')) > 1:
-        keyboard.append([InlineKeyboardButton('Назад', callback_data=f'back:{current_path}')])
+    if len(current_path.split(":")) > 1:
+        keyboard.append(
+            [InlineKeyboardButton(
+                "Назад", callback_data=f"back:{current_path}"
+            )]
+        )
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_phone_share_keyboard() -> ReplyKeyboardMarkup:
+    keyboard = ReplyKeyboardMarkup(
+        resize_keyboard=True, one_time_keyboard=True
+    )
+    keyboard.add(KeyboardButton(
+        "Поделиться номером телефона", request_contact=True
+    ))
+    return keyboard

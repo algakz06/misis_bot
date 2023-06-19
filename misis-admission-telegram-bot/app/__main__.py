@@ -10,22 +10,34 @@ from typing import Dict, Union
 import re
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    ReplyKeyboardRemove,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 from aiogram.utils.exceptions import MessageNotModified, BotBlocked
+
 # endregion
 
 # region local imports
 from app import config
 from app.config import log
+
 # from app.keyboards import reply_keyboards
-from app.keyboards.reply_keyboards import build_markup, reply_markup
+from app.keyboards.reply_keyboards import (
+    build_markup,
+    reply_markup,
+    get_phone_share_keyboard,
+)
 from app.utils.bot_buttons import Layout
 from app.utils.users import BotUsers
 from app.utils.statistics import Statistics
+
 # from app.utils.db import DBManager
 from app.utils.states import User, UserEditProfile
 from app.keyboards import profile as profile_kbs
 from app.utils import replies
+
 # endregion
 
 
@@ -49,17 +61,25 @@ is_admin = (
 async def start(message: types.Message):
     """Start handler."""
     if users.user_exists(message.from_user.id):
-        await message.answer("Привет! Кажется, мы уже знакомы. Чем могу помочь?",
-                             reply_markup=build_markup("", layout.get_btns("1"), is_main=True))
+        await message.answer(
+            "Привет! Кажется, мы уже знакомы. Чем могу помочь?",
+            reply_markup=build_markup("", layout.get_btns("1"), is_main=True),
+        )
         return
-    await message.answer("""
-Привет!\n
-Это телеграмм-бот НИТУ МИСИС,\
-здесь ты сможешь получить ответ на все свои вопросы\n
-Только перед этим нам надо получить от тебя немного информации
-""")
-    await message.answer("Для начала отправь мне свое имя",
-                         reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        """
+Привет! 🙋🏻‍♀️🙋🏻‍♂️\n\n
+Мы создали этот чат-бот специально для абитуриентов Университета науки и технологий МИСИС.\
+Здесь вы найдете ответы на все самые важные вопросы по поступлению на программы бакалавриата, специалитета, магистратуры и аспирантуры.\n\n
+Бот поможет вам сориентироваться в направлениях подготовки, сроках приемной кампании,\
+перечне необходимых документов и вариантах их подачи, баллах за индивидуальные достижения. А еще мы можем рассказать про стипендии и внеучебную жизнь.\n\n
+Начнем ❓
+"""
+    )
+    await message.answer(
+        "Перед началом работы мне нужно получить немного информации от вас.\n\nДля начала, отправьте свое имя.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
     await User.first_name.set()
 
 
@@ -70,35 +90,57 @@ async def get_first_name(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["first_name"] = message.text
-    await message.answer("Записал!\n\nТеперь отправь свою фамилию",
-                         reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        "Записал!\n\nТеперь, отправьте фамилию", reply_markup=ReplyKeyboardRemove()
+    )
     await User.last_name.set()
 
 
 @dp.message_handler(state=User.last_name)
 async def get_last_name(message: types.Message, state: FSMContext):
     if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
-        await message.answer('Неверный формат, напиши свою фамилию, например "Коротков"',
-                             reply_markup=ReplyKeyboardRemove())
+        await message.answer(
+            'Неверный формат, напишите свою фамилию, например "Коротков"',
+            reply_markup=ReplyKeyboardRemove(),
+        )
         return
     async with state.proxy() as data:
         data["last_name"] = message.text
-    await message.answer("И последний шаг!\n\nОтправь свою электронную почту",
-                         reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        "Почти закончили!\n\nНапишите свой email.", reply_markup=ReplyKeyboardRemove()
+    )
     await User.email.set()
 
 
 @dp.message_handler(state=User.email)
 async def get_email(message: types.Message, state: FSMContext):
-    if not requests.get(f"{config.DEFAULT_BASE_URL}/check/email?email={message.text}").json()["is_valid"]:
-        await message.answer('Неверный формат! Пример: example@ya.ru',
-                             reply_markup=ReplyKeyboardRemove())
+    if not requests.get(
+        f"{config.DEFAULT_BASE_URL}/check/email?email={message.text}"
+    ).json()["is_valid"]:
+        await message.answer(
+            "Неверный формат! Пример: example@ya.ru", reply_markup=ReplyKeyboardRemove()
+        )
         return
     async with state.proxy() as data:
         data["email"] = message.text
-    await message.answer("Спасибо за регистрацию и добро пожаловать!\n\nВы можете оставить дополнительную информацию о \
-себе в пункте меню \"Профиль\"",
-                         reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        "Последний шаг — ваш номер телефона!\n\n\
+    Отправьте его в формате 89999999999.",
+        reply_markup=get_phone_share_keyboard(),
+    )
+
+
+@dp.message_handler(content_types=types.ContentType.CONTACT, state=User.phone)
+async def get_phone(message: types.Message, state: FSMContext):
+    if not requests.get(
+        f"{config.DEFAULT_BASE_URL}/check/phone?phone={message.text}"
+    ).json()["is_valid"]:
+        await message.answer(
+            "Неверный формат! Пример: 89999999999", reply_markup=ReplyKeyboardRemove()
+        )
+        return
+    async with state.proxy() as data:
+        data["phone"] = message.contact.phone_number
     buttons = layout.get_btns("1")
     reply_msg = layout.get_reply("0")
     await message.answer(
@@ -110,7 +152,8 @@ async def get_email(message: types.Message, state: FSMContext):
             username=message.from_user.username,
             first_name=data["first_name"],
             last_name=data["last_name"],
-            email=data["email"]
+            phone=data["phone"],
+            email=data["email"],
         )
     await state.finish()
 
@@ -144,22 +187,20 @@ async def resend_keyboard(message: types.Message):
                 await bot.send_message(
                     chat_id=user_id,
                     text="Клавиатура обновилась",
-                    reply_markup=build_markup("", buttons, True)
+                    reply_markup=build_markup("", buttons, True),
                 )
             except BotBlocked:
                 log.debug(f"User {user_id} blocked the bot")
     if "replies" in args:
         log.debug("Asking the backend to reload all replies")
         requests.get(f"{config.DEFAULT_BASE_URL}/reload/replies")
-        await bot.send_message(message.from_user.id,
-                               "Ответы перезагружены")
+        await bot.send_message(message.from_user.id, "Ответы перезагружены")
     if "users" in args:
         log.debug("Asking the backend to reload all users")
         requests.get(f"{config.DEFAULT_BASE_URL}/reload/users")
         users.fetch()
         users.admins.fetch()
-        await bot.send_message(message.from_user.id,
-                               "Пользователи перезагружены")
+        await bot.send_message(message.from_user.id, "Пользователи перезагружены")
 
 
 @dp.message_handler(lambda message: message.text == config.PROFILE_BTN)
@@ -168,91 +209,115 @@ async def profile_info(message: types.Message):
     if not users.user_exists(message.from_user.id):
         await message.answer(replies.not_registered(message.from_user.first_name))
         return
-    await bot.send_message(message.from_user.id,
-                           replies.profile_info(users.get(message.from_user.id)),
-                           reply_markup=profile_kbs.inlProfileMenu)
+    await bot.send_message(
+        message.from_user.id,
+        replies.profile_info(users.get(message.from_user.id)),
+        reply_markup=profile_kbs.inlProfileMenu,
+    )
 
 
 def get_profile_edit_fields_kb() -> InlineKeyboardMarkup:
     """Get inline keyboard with profile fields for editing."""
     kb = InlineKeyboardMarkup()
     fields = {
-        'first_name': 'Имя',
-        'last_name': 'Фамилия',
-        'city': 'Город',
-        'email': 'Email',
-        'phone_number': 'Телефон',
+        "first_name": "Имя",
+        "last_name": "Фамилия",
+        "city": "Город",
+        "email": "Email",
+        "phone_number": "Телефон",
     }
     for key in fields:
-        kb.add(InlineKeyboardButton(fields[key], callback_data=f'profile:edit:{key}'))
-    kb.add(InlineKeyboardButton('Готово', callback_data='profile:edit:done'))
+        kb.add(InlineKeyboardButton(fields[key], callback_data=f"profile:edit:{key}"))
+    kb.add(InlineKeyboardButton("Готово", callback_data="profile:edit:done"))
     return kb
 
 
-@dp.callback_query_handler(lambda c: c.data == 'profile:edit')
+@dp.callback_query_handler(lambda c: c.data == "profile:edit")
 async def edit_profile(call: types.CallbackQuery, secondary_run: bool = False) -> None:
     """Edit user profile."""
     keyboard = get_profile_edit_fields_kb()
     if not secondary_run:
         await call.answer()
-        await call.message.edit_text(replies.profile_info(users.get(call.from_user.id)),
-                                     reply_markup=keyboard)
+        await call.message.edit_text(
+            replies.profile_info(users.get(call.from_user.id)), reply_markup=keyboard
+        )
     else:
-        await bot.send_message(call.from_user.id,
-                               replies.profile_info(users.get(call.from_user.id)),
-                               reply_markup=keyboard)
-    mkb_remove = await call.message.answer("Убираю основную клавиатуру...", reply_markup=ReplyKeyboardRemove())
+        await bot.send_message(
+            call.from_user.id,
+            replies.profile_info(users.get(call.from_user.id)),
+            reply_markup=keyboard,
+        )
+    mkb_remove = await call.message.answer(
+        "Убираю основную клавиатуру...", reply_markup=ReplyKeyboardRemove()
+    )
     await mkb_remove.delete()
 
 
-@dp.callback_query_handler(lambda c: c.data.startswith('profile:edit:') and
-                           not c.data == 'profile:edit:done')
+@dp.callback_query_handler(
+    lambda c: c.data.startswith("profile:edit:") and not c.data == "profile:edit:done"
+)
 async def edit_profile_action(call: types.CallbackQuery, state: FSMContext) -> None:
     """Edit user profile - select action."""
     await call.answer()
     user_data = users.get(call.from_user.id)
     await state.update_data(profile_call=call)
-    fn = lambda x: f'profile:edit:{x}'
-    if call.data == fn('first_name'):
-        await call.message.edit_text(replies.profile_edit_first_name(user_data['first_name'],
-                                                                     user_data['last_name']))
+    fn = lambda x: f"profile:edit:{x}"
+    if call.data == fn("first_name"):
+        await call.message.edit_text(
+            replies.profile_edit_first_name(
+                user_data["first_name"], user_data["last_name"]
+            )
+        )
         await state.set_state(UserEditProfile.first_name)
-    elif call.data == fn('last_name'):
-        await call.message.edit_text(replies.profile_edit_last_name(user_data['first_name'],
-                                                                    user_data['last_name']))
+    elif call.data == fn("last_name"):
+        await call.message.edit_text(
+            replies.profile_edit_last_name(
+                user_data["first_name"], user_data["last_name"]
+            )
+        )
         await state.set_state(UserEditProfile.last_name)
-    elif call.data == fn('city'):
-        await call.message.edit_text(replies.profile_edit_city(user_data['city']))
+    elif call.data == fn("city"):
+        await call.message.edit_text(replies.profile_edit_city(user_data["city"]))
         await state.set_state(UserEditProfile.city)
-    elif call.data == fn('email'):
-        await call.message.edit_text(replies.profile_edit_email(user_data['email']))
+    elif call.data == fn("email"):
+        await call.message.edit_text(replies.profile_edit_email(user_data["email"]))
         await state.set_state(UserEditProfile.email)
-    elif call.data == fn('phone_number'):
-        await call.message.edit_text(replies.profile_edit_phone(user_data['phone_number']))
+    elif call.data == fn("phone_number"):
+        await call.message.edit_text(
+            replies.profile_edit_phone(user_data["phone_number"])
+        )
         await state.set_state(UserEditProfile.phone)
     else:
-        await bot.send_message(call.from_user.id, f"Field is not editable yet: {call.data}")
+        await bot.send_message(
+            call.from_user.id, f"Field is not editable yet: {call.data}"
+        )
 
 
-@dp.callback_query_handler(lambda c: c.data == 'profile:edit:done')
+@dp.callback_query_handler(lambda c: c.data == "profile:edit:done")
 async def edit_profile_done(call: types.CallbackQuery, state: FSMContext) -> None:
     """Edit user profile (Original state)."""
     await state.finish()
     await call.answer()
-    await call.message.edit_text(replies.profile_info(users.get(call.from_user.id)),
-                                 reply_markup=profile_kbs.inlProfileMenu)
-    await call.message.answer("Восстанавливаю основную клавиатуру...",
-                              reply_markup=build_markup("", layout.get_btns("1"), is_main=True))
+    await call.message.edit_text(
+        replies.profile_info(users.get(call.from_user.id)),
+        reply_markup=profile_kbs.inlProfileMenu,
+    )
+    await call.message.answer(
+        "Восстанавливаю основную клавиатуру...",
+        reply_markup=build_markup("", layout.get_btns("1"), is_main=True),
+    )
 
 
 @dp.message_handler(state=UserEditProfile.first_name)
 async def edit_profile_first_name(message: types.Message, state: FSMContext):
     """Edit user profile first name."""
-    profile_call = (await state.get_data())['profile_call']
+    profile_call = (await state.get_data())["profile_call"]
     await state.update_data(first_name=message.text)
     users.update(profile_call.from_user.id, first_name=message.text)
-    await profile_call.message.edit_text(replies.profile_info(users.get(profile_call.from_user.id)),
-                                         reply_markup=get_profile_edit_fields_kb())
+    await profile_call.message.edit_text(
+        replies.profile_info(users.get(profile_call.from_user.id)),
+        reply_markup=get_profile_edit_fields_kb(),
+    )
     await message.delete()
     await state.finish()
 
@@ -260,11 +325,13 @@ async def edit_profile_first_name(message: types.Message, state: FSMContext):
 @dp.message_handler(state=UserEditProfile.last_name)
 async def edit_profile_last_name(message: types.Message, state: FSMContext):
     """Edit user profile last name."""
-    profile_call = (await state.get_data())['profile_call']
+    profile_call = (await state.get_data())["profile_call"]
     await state.update_data(last_name=message.text)
     users.update(profile_call.from_user.id, last_name=message.text)
-    await profile_call.message.edit_text(replies.profile_info(users.get(profile_call.from_user.id)),
-                                         reply_markup=get_profile_edit_fields_kb())
+    await profile_call.message.edit_text(
+        replies.profile_info(users.get(profile_call.from_user.id)),
+        reply_markup=get_profile_edit_fields_kb(),
+    )
     await message.delete()
     await state.finish()
 
@@ -272,7 +339,7 @@ async def edit_profile_last_name(message: types.Message, state: FSMContext):
 @dp.message_handler(state=UserEditProfile.city)
 async def edit_profile_city(message: types.Message, state: FSMContext):
     """Edit user profile city."""
-    profile_call = (await state.get_data())['profile_call']
+    profile_call = (await state.get_data())["profile_call"]
     is_updated = users.update(profile_call.from_user.id, city=message.text)
     if not is_updated:
         await message.delete()
@@ -281,8 +348,10 @@ async def edit_profile_city(message: types.Message, state: FSMContext):
         except MessageNotModified:
             pass
         return
-    await profile_call.message.edit_text(replies.profile_info(users.get(profile_call.from_user.id)),
-                                         reply_markup=get_profile_edit_fields_kb())
+    await profile_call.message.edit_text(
+        replies.profile_info(users.get(profile_call.from_user.id)),
+        reply_markup=get_profile_edit_fields_kb(),
+    )
     await message.delete()
     await state.finish()
 
@@ -290,7 +359,7 @@ async def edit_profile_city(message: types.Message, state: FSMContext):
 @dp.message_handler(state=UserEditProfile.email)
 async def edit_profile_email(message: types.Message, state: FSMContext):
     """Edit user profile email."""
-    profile_call = (await state.get_data())['profile_call']
+    profile_call = (await state.get_data())["profile_call"]
     is_updated = users.update(profile_call.from_user.id, email=message.text)
     if not is_updated:
         await message.delete()
@@ -299,8 +368,10 @@ async def edit_profile_email(message: types.Message, state: FSMContext):
         except MessageNotModified:
             pass
         return
-    await profile_call.message.edit_text(replies.profile_info(users.get(profile_call.from_user.id)),
-                                         reply_markup=get_profile_edit_fields_kb())
+    await profile_call.message.edit_text(
+        replies.profile_info(users.get(profile_call.from_user.id)),
+        reply_markup=get_profile_edit_fields_kb(),
+    )
     await message.delete()
     await state.finish()
 
@@ -308,7 +379,7 @@ async def edit_profile_email(message: types.Message, state: FSMContext):
 @dp.message_handler(state=UserEditProfile.phone)
 async def edit_profile_phone(message: types.Message, state: FSMContext):
     """Edit user profile phone."""
-    profile_call = (await state.get_data())['profile_call']
+    profile_call = (await state.get_data())["profile_call"]
     is_updated = users.update(profile_call.from_user.id, phone=message.text)
     if not is_updated:
         await message.delete()
@@ -317,8 +388,10 @@ async def edit_profile_phone(message: types.Message, state: FSMContext):
         except MessageNotModified:
             pass
         return
-    await profile_call.message.edit_text(replies.profile_info(users.get(profile_call.from_user.id)),
-                                         reply_markup=get_profile_edit_fields_kb())
+    await profile_call.message.edit_text(
+        replies.profile_info(users.get(profile_call.from_user.id)),
+        reply_markup=get_profile_edit_fields_kb(),
+    )
     await message.delete()
     await state.finish()
 
@@ -380,7 +453,9 @@ async def query_back(call: types.CallbackQuery):
 async def query_handler(call: types.CallbackQuery):
     await call.answer()
     if not users.user_exists(call.from_user.id):
-        await call.message.answer("Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start")
+        await call.message.answer(
+            "Кажется, ты не зарегистрирован! Чтобы начать, нажми сюда: /start"
+        )
         return
     current_path = call.data
     btn_id = current_path.split(":")[-1]
@@ -422,4 +497,5 @@ async def on_startup(_):
 
 if __name__ == "__main__":
     from aiogram import executor
+
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
