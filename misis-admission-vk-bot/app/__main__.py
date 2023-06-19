@@ -89,7 +89,7 @@ async def get_city(message: Message):
     if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
         await message.answer("Неверный формат!")
         return
-    await message.answer("Почти закончили! Напиши свой email")
+    await message.answer("Почти закончили! Отправь свою электронную почту")
     bot_users.add_params(message.from_id, "city", message.text)
     await bot.state_dispenser.set(message.peer_id, User.EMAIL)
 
@@ -99,7 +99,7 @@ async def get_email(message: Message):
     if not requests.get(
         f"{config.DEFAULT_BASE_URL}/check/email?email={message.text}"
     ).json()["is_valid"]:
-        await message.answer('Неверный формат! Пример "lll@gmail.com"')
+        await message.answer('Неверный формат! Пример: example@ya.ru')
         return
     await message.answer(
         "Последний шаг — твой номер телефона! Отправь его в формате 79999999999"

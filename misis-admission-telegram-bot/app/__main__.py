@@ -83,7 +83,7 @@ async def get_last_name(message: types.Message, state: FSMContext):
         return
     async with state.proxy() as data:
         data["last_name"] = message.text
-    await message.answer("И последний шаг!\n\nОтправь свою почту, например 0xb1b1.algakz06@gmail.com",
+    await message.answer("И последний шаг!\n\nОтправь свою электронную почту",
                          reply_markup=ReplyKeyboardRemove())
     await User.email.set()
 
@@ -91,7 +91,7 @@ async def get_last_name(message: types.Message, state: FSMContext):
 @dp.message_handler(state=User.email)
 async def get_email(message: types.Message, state: FSMContext):
     if not requests.get(f"{config.DEFAULT_BASE_URL}/check/email?email={message.text}").json()["is_valid"]:
-        await message.answer('Неверный формат! Пример "0xb1b1.algakz06@gmail.com"',
+        await message.answer('Неверный формат! Пример: example@ya.ru',
                              reply_markup=ReplyKeyboardRemove())
         return
     async with state.proxy() as data:
