@@ -128,6 +128,7 @@ async def get_email(message: types.Message, state: FSMContext):
     Отправьте его в формате 89999999999.",
         reply_markup=get_phone_share_keyboard(),
     )
+    await User.phone.set()
 
 
 @dp.message_handler(content_types=types.ContentType.CONTACT, state=User.phone)
