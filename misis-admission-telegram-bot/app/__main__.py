@@ -58,166 +58,16 @@ is_admin = (
 @dp.message_handler(commands=["cancel"], state="*")
 async def cancel(message: types.Message, state: FSMContext):
     """Cancel handler."""
-    await state.finish()
-
-
-@dp.message_handler(commands=["start"])
-async def start(message: types.Message):
-    """Start handler."""
     if users.user_exists(message.from_user.id):
         await message.answer(
-            "Привет! Кажется, мы уже знакомы. Чем могу помочь?",
+            "Действие отменено. На чем мы остановились?",
             reply_markup=build_markup("", layout.get_btns("1"), is_main=True),
         )
         return
-    await message.answer(
-        """
-Привет! 🙋🏻‍♀️🙋🏻‍♂️\n\n
-Мы создали этот чат-бот специально для абитуриентов Университета науки и технологий МИСИС.\
-Здесь вы найдете ответы на все самые важные вопросы по поступлению на программы бакалавриата, специалитета, магистратуры и аспирантуры.\n\n
-Бот поможет вам сориентироваться в направлениях подготовки, сроках приемной кампании,\
-перечне необходимых документов и вариантах их подачи, баллах за индивидуальные достижения.\
-А еще мы можем рассказать про стипендии и внеучебную жизнь.\n\n
-Начнем ❓
-"""
-    )
-    await message.answer(
-        "Перед началом работы мне нужно получить немного информации от вас.\n\nДля начала, отправьте свое имя.",
-        reply_markup=ReplyKeyboardRemove(),
-    )
-    await User.first_name.set()
-
-
-@dp.message_handler(state=User.first_name)
-async def get_first_name(message: types.Message, state: FSMContext):
-    if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
-        await message.answer(
-            'Неверный формат, напиши свое имя, например "Даниил"'
-        )
-        return
-    async with state.proxy() as data:
-        data["first_name"] = message.text
-    await message.answer(
-        "Записал!\n\nТеперь, отправьте фамилию",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    await User.last_name.set()
-
-
-@dp.message_handler(state=User.last_name)
-async def get_last_name(message: types.Message, state: FSMContext):
-    if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
-        await message.answer(
-            'Неверный формат, напишите свою фамилию, например "Коротков"',
-            reply_markup=ReplyKeyboardRemove(),
-        )
-        return
-    async with state.proxy() as data:
-        data["last_name"] = message.text
-    await message.answer(
-        "Почти закончили!\n\nНапишите свой email.",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    await User.email.set()
-
-
-@dp.message_handler(state=User.email)
-async def get_email(message: types.Message, state: FSMContext):
-    if not requests.get(
-        f"{config.DEFAULT_BASE_URL}/check/email?email={message.text}"
-    ).json()["is_valid"]:
-        await message.answer(
-            "Неверный формат! Пример: example@ya.ru",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return
-    async with state.proxy() as data:
-        data["email"] = message.text
-    await message.answer(
-        "Последний шаг — ваш номер телефона!\n\n\
-    Отправьте его в формате 89999999999.",
-        reply_markup=get_phone_share_keyboard(),
-    )
-    await User.phone.set()
-
-
-@dp.message_handler(content_types=types.ContentType.CONTACT, state=User.phone)
-async def get_phone(message: types.Message, state: FSMContext):
-    if not requests.get(
-        f"{config.DEFAULT_BASE_URL}/check/phone?phone={message.text}"
-    ).json()["is_valid"]:
-        await message.answer(
-            "Неверный формат! Пример: 89999999999",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return
-    async with state.proxy() as data:
-        data["phone"] = message.contact.phone_number
-    buttons = layout.get_btns("1")
-    reply_msg = layout.get_reply("0")
-    await message.answer(
-        reply_msg, reply_markup=build_markup("", buttons, is_main=True)
-    )
-    async with state.proxy() as data:
-        users.add(
-            message.from_user.id,
-            username=message.from_user.username,
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            phone=data["phone"],
-            email=data["email"],
-        )
     await state.finish()
 
 
-@dp.message_handler(commands=["elevate"])
-async def elevate_to_admin(message: types.Message):
-    # Get token as the message argument
-    token = message.get_args().split()[0]
-    is_elevated = users.admins.add(message.from_user.id, token)
-    if is_elevated:
-        await message.answer("Вы теперь администратор!")
-        return
-    await message.answer("Неверный токен")
-
-
-@dp.message_handler(commands=["reload"])
-async def resend_keyboard(message: types.Message):
-    if not is_admin(message):
-        await message.answer("Вы не администратор!")
-        return
-
-    args = message.get_args().split()
-    log.debug(f"Arguments for /reload: {args}")
-
-    if "kb" in args:
-        log.debug("Resending keyboard to all users")
-        buttons = layout.get_btns("1")
-        for user_id in users.get_ids():
-            try:
-                log.debug(f"Resending keyboard to {user_id}")
-                await bot.send_message(
-                    chat_id=user_id,
-                    text="Клавиатура обновилась",
-                    reply_markup=build_markup("", buttons, True),
-                )
-            except BotBlocked:
-                log.debug(f"User {user_id} blocked the bot")
-    if "replies" in args:
-        log.debug("Asking the backend to reload all replies")
-        requests.get(f"{config.DEFAULT_BASE_URL}/reload/replies")
-        await bot.send_message(message.from_user.id, "Ответы перезагружены")
-    if "users" in args:
-        log.debug("Asking the backend to reload all users")
-        requests.get(f"{config.DEFAULT_BASE_URL}/reload/users")
-        users.fetch()
-        users.admins.fetch()
-        await bot.send_message(
-            message.from_user.id,
-            "Пользователи перезагружены"
-        )
-
-
+# region Profile edit
 @dp.message_handler(lambda message: message.text == config.PROFILE_BTN)
 async def profile_info(message: types.Message):
     """Send user profile info and edit buttons."""
@@ -427,6 +277,164 @@ async def edit_profile_phone(message: types.Message, state: FSMContext):
     )
     await message.delete()
     await state.finish()
+# endregion
+
+
+@dp.message_handler(commands=["start"])
+async def start(message: types.Message):
+    """Start handler."""
+    if users.user_exists(message.from_user.id):
+        await message.answer(
+            "Привет! Кажется, мы уже знакомы. Чем могу помочь?",
+            reply_markup=build_markup("", layout.get_btns("1"), is_main=True),
+        )
+        return
+    await message.answer(
+        """
+Привет! 🙋🏻‍♀️🙋🏻‍♂️\n\n
+Мы создали этот чат-бот специально для абитуриентов Университета науки и технологий МИСИС.\
+Здесь вы найдете ответы на все самые важные вопросы по поступлению на программы бакалавриата, специалитета, магистратуры и аспирантуры.\n\n
+Бот поможет вам сориентироваться в направлениях подготовки, сроках приемной кампании,\
+перечне необходимых документов и вариантах их подачи, баллах за индивидуальные достижения.\
+А еще мы можем рассказать про стипендии и внеучебную жизнь.\n\n
+Начнем ❓
+"""
+    )
+    await message.answer(
+        "Перед началом работы мне нужно получить немного информации от вас.\n\nДля начала, отправьте свое имя.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await User.first_name.set()
+
+
+@dp.message_handler(state=User.first_name)
+async def get_first_name(message: types.Message, state: FSMContext):
+    if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
+        await message.answer(
+            'Неверный формат, напиши свое имя, например "Даниил"'
+        )
+        return
+    async with state.proxy() as data:
+        data["first_name"] = message.text
+    await message.answer(
+        "Записал!\n\nТеперь, отправьте фамилию",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    await User.last_name.set()
+
+
+@dp.message_handler(state=User.last_name)
+async def get_last_name(message: types.Message, state: FSMContext):
+    if not re.match("^[А-Яа-яЁё]{2,20}$", message.text):
+        await message.answer(
+            'Неверный формат, напишите свою фамилию, например "Коротков"',
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return
+    async with state.proxy() as data:
+        data["last_name"] = message.text
+    await message.answer(
+        "Почти закончили!\n\nНапишите свой email.",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    await User.email.set()
+
+
+@dp.message_handler(state=User.email)
+async def get_email(message: types.Message, state: FSMContext):
+    if not requests.get(
+        f"{config.DEFAULT_BASE_URL}/check/email?email={message.text}"
+    ).json()["is_valid"]:
+        await message.answer(
+            "Неверный формат! Пример: example@ya.ru",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
+    async with state.proxy() as data:
+        data["email"] = message.text
+    await message.answer(
+        "Последний шаг — ваш номер телефона!\n\n\
+    Отправьте его в формате 89999999999.",
+        reply_markup=get_phone_share_keyboard(),
+    )
+    await User.phone.set()
+
+
+@dp.message_handler(content_types=types.ContentType.CONTACT, state=User.phone)
+async def get_phone(message: types.Message, state: FSMContext):
+    if not requests.get(
+        f"{config.DEFAULT_BASE_URL}/check/phone?phone={message.text}"
+    ).json()["is_valid"]:
+        await message.answer(
+            "Неверный формат! Пример: 89999999999",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
+    async with state.proxy() as data:
+        data["phone"] = message.contact.phone_number
+    buttons = layout.get_btns("1")
+    reply_msg = layout.get_reply("0")
+    await message.answer(
+        reply_msg, reply_markup=build_markup("", buttons, is_main=True)
+    )
+    async with state.proxy() as data:
+        users.add(
+            message.from_user.id,
+            username=message.from_user.username,
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            phone=data["phone"],
+            email=data["email"],
+        )
+    await state.finish()
+
+
+@dp.message_handler(commands=["elevate"])
+async def elevate_to_admin(message: types.Message):
+    # Get token as the message argument
+    token = message.get_args().split()[0]
+    is_elevated = users.admins.add(message.from_user.id, token)
+    if is_elevated:
+        await message.answer("Вы теперь администратор!")
+        return
+    await message.answer("Неверный токен")
+
+
+@dp.message_handler(commands=["reload"])
+async def resend_keyboard(message: types.Message):
+    if not is_admin(message):
+        await message.answer("Вы не администратор!")
+        return
+
+    args = message.get_args().split()
+    log.debug(f"Arguments for /reload: {args}")
+
+    if "kb" in args:
+        log.debug("Resending keyboard to all users")
+        buttons = layout.get_btns("1")
+        for user_id in users.get_ids():
+            try:
+                log.debug(f"Resending keyboard to {user_id}")
+                await bot.send_message(
+                    chat_id=user_id,
+                    text="Клавиатура обновилась",
+                    reply_markup=build_markup("", buttons, True),
+                )
+            except BotBlocked:
+                log.debug(f"User {user_id} blocked the bot")
+    if "replies" in args:
+        log.debug("Asking the backend to reload all replies")
+        requests.get(f"{config.DEFAULT_BASE_URL}/reload/replies")
+        await bot.send_message(message.from_user.id, "Ответы перезагружены")
+    if "users" in args:
+        log.debug("Asking the backend to reload all users")
+        requests.get(f"{config.DEFAULT_BASE_URL}/reload/users")
+        users.fetch()
+        users.admins.fetch()
+        await bot.send_message(
+            message.from_user.id,
+            "Пользователи перезагружены"
+        )
 
 
 @dp.message_handler()
@@ -442,7 +450,7 @@ async def handler(message: types.Message) -> None:
         return
 
     if message.text not in buttons.values():
-        print("ERROR: no message")
+        log.debug(f"Default message handler: {message.text} not in buttons.values() ({buttons.values()})")
         return
 
     btn_id = [btn_id for btn_id, text in buttons.items() if text == message.text][0]
