@@ -128,7 +128,10 @@ class BotUsers:
             f'{DEFAULT_BASE_URL}/user/update', json=body
         )
         log.info(f"BotUser.update(): {r.status_code}, data: {body}")
-        is_updated = True if r.json()["status"] == 0 else False
+        try:
+            is_updated = True if r.json()["status"] == 0 else False
+        except requests.exceptions.JSONDecodeError:
+            return False  # Something's gone wrong with the backend (RO Google Sheet?)
         if is_updated:
             if first_name:
                 self.users["first_name"] = first_name
