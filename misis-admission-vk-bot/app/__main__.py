@@ -34,7 +34,7 @@ global counter
 counter = 0
 
 
-@bot.on.message(text=["/cancel"], state="*")
+@bot.on.message(text=["/cancel"])
 async def cancel(message: Message):
     await message.answer("Отменено")
     await bot.state_dispenser.finish(message.peer_id)
@@ -128,7 +128,7 @@ async def get_phone(message: Message):
     if not requests.get(
         f"{config.DEFAULT_BASE_URL}/check/phone_number?phone={message.text}"
     ).json()["is_valid"]:
-        await message.answer('Неверный формат! Пример: "79999999999"')
+        await message.answer('Неверный формат! Пример: "89999999999"')
         return
     await message.answer("Спасибо за регистрацию и добро пожаловать!")
     buttons = layout.get_btns("1")
