@@ -34,7 +34,7 @@ global counter
 counter = 0
 
 
-@bot.on.message(text=["/cancel"], state="*")
+@bot.on.message(text=["/cancel"])
 async def cancel(message: Message):
     await message.answer("Отменено")
     await bot.state_dispenser.finish(message.peer_id)

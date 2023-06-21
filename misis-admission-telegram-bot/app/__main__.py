@@ -354,8 +354,8 @@ async def get_email(message: types.Message, state: FSMContext):
         data["email"] = message.text
     await message.answer(
         "Последний шаг — ваш номер телефона!\n\n\
-    Отправьте его в формате 89999999999.",
-        reply_markup=get_phone_share_keyboard(),
+Отправьте его в формате 89999999999.",
+        reply_markup=ReplyKeyboardRemove(),
     )
     await User.phone.set()
 
@@ -363,7 +363,7 @@ async def get_email(message: types.Message, state: FSMContext):
 @dp.message_handler(content_types=types.ContentType.CONTACT, state=User.phone)
 async def get_phone(message: types.Message, state: FSMContext):
     if not requests.get(
-        f"{config.DEFAULT_BASE_URL}/check/phone?phone={message.text}"
+        f"{config.DEFAULT_BASE_URL}/check/phone_number?phone={message.text}"
     ).json()["is_valid"]:
         await message.answer(
             "Неверный формат! Пример: 89999999999",
@@ -371,7 +371,7 @@ async def get_phone(message: types.Message, state: FSMContext):
         )
         return
     async with state.proxy() as data:
-        data["phone"] = message.contact.phone_number
+        data["phone"] = message.text
     buttons = layout.get_btns("1")
     reply_msg = layout.get_reply("0")
     await message.answer(
