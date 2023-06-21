@@ -354,7 +354,7 @@ async def get_email(message: types.Message, state: FSMContext):
         data["email"] = message.text
     await message.answer(
         "Последний шаг — ваш номер телефона!\n\n\
-Отправьте его в формате 89999999999.",
+Отправьте его в формате 89123456789.",
         reply_markup=ReplyKeyboardRemove(),
     )
     await User.phone.set()
@@ -366,7 +366,7 @@ async def get_phone(message: types.Message, state: FSMContext):
         f"{config.DEFAULT_BASE_URL}/check/phone_number?phone={message.text}"
     ).json()["is_valid"]:
         await message.answer(
-            "Неверный формат! Пример: 89999999999",
+            "Неверный формат! Пример: 89123456789",
             reply_markup=ReplyKeyboardRemove()
         )
         return
