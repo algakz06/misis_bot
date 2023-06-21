@@ -360,7 +360,7 @@ async def get_email(message: types.Message, state: FSMContext):
     await User.phone.set()
 
 
-@dp.message_handler(content_types=types.ContentType.CONTACT, state=User.phone)
+@dp.message_handler(state=User.phone)
 async def get_phone(message: types.Message, state: FSMContext):
     if not requests.get(
         f"{config.DEFAULT_BASE_URL}/check/phone_number?phone={message.text}"
