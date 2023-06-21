@@ -25,7 +25,7 @@ class Statistics:
         self.storage.append(
             {
                 "user_id": user_id,
-                "platform": "tg",
+                "platform": "vk",
                 "button_id": button_id,
                 "timestamp": int(datetime.now().timestamp()),
             }
